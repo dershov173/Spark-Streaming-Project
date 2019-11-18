@@ -45,7 +45,9 @@ class EventsGenerator {
 
   }
 
-  def generateType(): Gen[String] = Gen.oneOf("click", "redirect")
+  def generateType(): Gen[String] = {
+    Gen.frequency((5, Gen.const("redirect")), (95, Gen.const("click")))
+  }
 
 
 }
