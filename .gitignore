@@ -1,0 +1,28 @@
+#java specific
+*.class
+target/
+test-output/
+test-output/Default/
+#.gitignore
+.classpath
+.project
+.settings/
+activemq-data/
+.DS_Store
+.springbeans
+#javadoc
+doc/
+#ATG Module
+POC/
+dependency-reduced-pom.xml
+#idea
+.idea/
+*.iml
+pmip/
+logs/
+logs.home_IS_UNDEFINED/
+#vscode
+.vscode
+*/.factorypath
+bigdata-data-quality-ui/.tmp
+bigdata-data-quality-ui/src/
