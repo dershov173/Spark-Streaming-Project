@@ -51,12 +51,3 @@ class EventsGenerator {
 
 
 }
-
-object EventsGenerator {
-  def main(args: Array[String]): Unit = {
-    Gen.infiniteStream(new EventsGenerator().generateEvent())
-      .sample
-      .get
-      .foreach(println)
-  }
-}
