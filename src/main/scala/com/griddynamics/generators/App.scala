@@ -1,7 +1,7 @@
 package com.griddynamics.generators
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.scalacheck.Gen
 
 object App {
@@ -12,9 +12,14 @@ object App {
     conf.set("dfs.client.use.datanode.hostname", "true")
 
     val fs = FileSystem.get(conf)
+    val path = new Path("/events")
+    fs.mkdirs(path)
+
     val hDFSWriter = HDFSWriter(fs)
 
-    Gen.infiniteStream(new EventsGenerator().generateEvent())
+
+
+    Gen.listOfN(10, new EventsGenerator().generateEvent())
       .sample
       .get
       .map(EventToJsonSerializer.eventToJson)

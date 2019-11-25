@@ -1,5 +1,7 @@
 package com.griddynamics.generators
 
+import java.util.concurrent.atomic.AtomicLong
+
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json._
@@ -7,10 +9,10 @@ import play.api.libs.json._
 
 case class HDFSWriter(fs:FileSystem) {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  private val id = new AtomicLong(0)
 
-  def writeEventsToHDFS(eventWithTimeCreated: (String, Long)): Unit = {
-    val pathName = new Path(s"/events/${eventWithTimeCreated._2}.json")
-
+  def writeEventsToHDFS(eventWithTimeCreated: (String, String)): Unit = {
+    val pathName = new Path(s"/events/${eventWithTimeCreated._2}_${id.getAndIncrement()}.json")
     val outputStream = fs.create(pathName, false)
 
     outputStream.writeChars(eventWithTimeCreated._1)
@@ -23,7 +25,7 @@ case class HDFSWriter(fs:FileSystem) {
 }
 
 object EventToJsonSerializer {
-  def eventToJson(event: Event): (String, Long) = {
+  def eventToJson(event: Event): (String, String) = {
     implicit val eventWrites: Writes[Event] = new Writes[Event] {
       def writes(event: Event): JsValue = Json.obj(
         "eventType" -> event.eventType,
@@ -32,6 +34,6 @@ object EventToJsonSerializer {
         "url" -> event.url
       )
     }
-    (Json.toJson(event).toString(),System.currentTimeMillis())
+    (Json.toJson(event).toString(), event.eventTime)
   }
 }
