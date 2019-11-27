@@ -8,7 +8,7 @@ object App {
 
   def main(args: Array[String]): Unit = {
     val conf = new Configuration()
-    conf.set("fs.defaultFS", "hdfs://127.0.0.1:8020")
+    conf.set("fs.defaultFS", "hdfs://127.0.0.1:9000")
     conf.set("dfs.client.use.datanode.hostname", "true")
 
     val fs = FileSystem.get(conf)
