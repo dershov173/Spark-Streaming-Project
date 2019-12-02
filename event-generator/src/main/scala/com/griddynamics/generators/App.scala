@@ -16,14 +16,13 @@ object App {
     fs.mkdirs(path)
 
     val hDFSWriter = HDFSWriter(fs)
-
-
-
     Gen.listOfN(10, new EventsGenerator().generateEvent())
       .sample
       .get
       .map(EventToJsonSerializer.eventToJson)
       .foreach(hDFSWriter.writeEventsToHDFS)
+
+    fs.close()
   }
 
 }

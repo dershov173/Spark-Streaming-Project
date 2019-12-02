@@ -7,25 +7,39 @@ import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json._
 
 
-case class HDFSWriter(fs:FileSystem) {
+object HDFSWriter {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
   private val id = new AtomicLong(0)
+  private val prefix = "/events/"
+  private val extension = "json"
 
-  def writeEventsToHDFS(eventWithTimeCreated: (String, String)): Unit = {
-    val pathName = new Path(s"/events/${eventWithTimeCreated._2}_${id.getAndIncrement()}.json")
+  def getPath(): Path = {
+    new Path(s"$prefix${System.currentTimeMillis()}_${id.getAndIncrement()}.$extension")
+  }
+}
+
+case class HDFSWriter(fs: FileSystem) {
+  def writeEventsToHDFS(eventJson: String): Unit = {
+    import com.griddynamics.generators.HDFSWriter._
+    val pathName = getPath()
     val outputStream = fs.create(pathName, false)
 
-    outputStream.writeChars(eventWithTimeCreated._1)
-    outputStream.flush()
+    try {
+      outputStream.writeChars(eventJson)
+      outputStream.flush()
 
-    logger.info("event flushed to hdfs {}", eventWithTimeCreated._1)
-    outputStream.close()
-
+      logger.info("event flushed to hdfs {}", eventJson)
+    } catch {
+      case t: Throwable => logger.error("There was an exception occurred while attempting to flush event to HDFS",
+        t)
+    } finally {
+      outputStream.close()
+    }
   }
 }
 
 object EventToJsonSerializer {
-  def eventToJson(event: Event): (String, String) = {
+  def eventToJson(event: Event): String = {
     implicit val eventWrites: Writes[Event] = new Writes[Event] {
       def writes(event: Event): JsValue = Json.obj(
         "eventType" -> event.eventType,
@@ -34,6 +48,6 @@ object EventToJsonSerializer {
         "url" -> event.url
       )
     }
-    (Json.toJson(event).toString(), event.eventTime)
+    Json.toJson(event).toString()
   }
 }
