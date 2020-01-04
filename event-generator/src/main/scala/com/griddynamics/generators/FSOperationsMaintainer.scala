@@ -2,13 +2,23 @@ package com.griddynamics.generators
 
 import java.util.concurrent.atomic.AtomicLong
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.slf4j.{Logger, LoggerFactory}
 
+object FSOperationsMaintainer {
+  def apply(conf:Configuration,
+            prefix:String = "/events",
+            extension: String = "json"): FSOperationsMaintainer =
+    FSOperationsMaintainer(FileSystem.get(conf),
+      prefix,
+      extension)
+}
+
 case class FSOperationsMaintainer(fs: FileSystem,
-                                  private val prefix: String = "/events",
-                                  private val extension: String = "json") extends AutoCloseable{
+                                  private val prefix: String,
+                                  private val extension: String) extends AutoCloseable{
   override def close(): Unit = fs.close()
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
@@ -25,8 +35,9 @@ case class FSOperationsMaintainer(fs: FileSystem,
 
       logger.info("event flushed to hdfs {}", eventJson)
     } catch {
-      case t: Throwable => logger.error("There was an exception occurred while attempting to flush event to HDFS",
-        t)
+      case t: Throwable =>
+        logger.error("There was an exception occurred" +
+          " while attempting to flush event to HDFS", t)
     } finally {
       outputStream.close()
     }

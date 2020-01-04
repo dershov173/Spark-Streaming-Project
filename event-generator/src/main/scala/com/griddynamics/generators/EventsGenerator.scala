@@ -8,7 +8,12 @@ case class IpAddress(firstDomain: Int, secondDomain: Int, thirdDomain: Int, four
 
 case class Event(eventType: String, ipAddress: String, eventTime: String, url: String)
 
-class EventsGenerator {
+case class EventsGenerator(maxDelayInMillis: Long,
+                           redirectsFraction: Int,
+                           clicksFraction: Int) {
+
+  def generatePortionOfEvents(numberToGenerate:Int): Gen[List[Event]] =
+    Gen.listOfN(numberToGenerate, generateEvent())
 
   def generateEvent(): Gen[Event] = {
     for {
@@ -40,13 +45,13 @@ class EventsGenerator {
     )
 
   def generateEventTime(): Gen[String] = {
-    Gen.chooseNum(0, 100000L)
+    Gen.chooseNum(0, maxDelayInMillis)
       .map(l => (System.currentTimeMillis() - l).toString)
 
   }
 
   def generateType(): Gen[String] = {
-    Gen.frequency((5, Gen.const("redirect")), (95, Gen.const("click")))
+    Gen.frequency((redirectsFraction, Gen.const("redirect")), (clicksFraction, Gen.const("click")))
   }
 
 
