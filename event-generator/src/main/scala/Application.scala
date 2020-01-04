@@ -1,12 +1,12 @@
-package com.griddynamics.generators
+import java.util.Properties
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.scalacheck.Gen
+object Application extends App {
 
-object App {
+  override def main(args: Array[String]): Unit = {
+    val properties = new Properties()
+    properties.load(getClass.getResourceAsStream("application.properties"))
 
-  def main(args: Array[String]): Unit = {
+
 //    val conf = new Configuration()
 //    conf.set("fs.defaultFS", "hdfs://127.0.0.1:9000")
 //    conf.set("dfs.client.use.datanode.hostname", "true")

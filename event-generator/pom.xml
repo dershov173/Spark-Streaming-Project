@@ -108,7 +108,7 @@
                     <appendAssemblyId>false</appendAssemblyId>
                     <archive>
                         <manifest>
-                            <mainClass>com.griddynamics.generators.App</mainClass>
+                            <mainClass>com.griddynamics.generators.Application</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

@@ -7,7 +7,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.slf4j.{Logger, LoggerFactory}
 
 case class FSOperationsMaintainer(fs: FileSystem,
-                                  private val prefix: String = "/events/",
+                                  private val prefix: String = "/events",
                                   private val extension: String = "json") extends AutoCloseable{
   override def close(): Unit = fs.close()
 
