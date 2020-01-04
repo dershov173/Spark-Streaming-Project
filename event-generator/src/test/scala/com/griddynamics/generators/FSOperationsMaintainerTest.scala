@@ -2,16 +2,17 @@ package com.griddynamics.generators
 
 import java.net.URI
 
-import org.apache.hadoop.fs._
 import org.apache.hadoop.fs.permission.FsPermission
+import org.apache.hadoop.fs.{FSDataInputStream, FSDataOutputStream, FileStatus, FileSystem, Path}
 import org.apache.hadoop.util.Progressable
 import org.scalacheck.Gen
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{FlatSpec, FunSuite, Matchers}
 
 import scala.collection.mutable.ListBuffer
 
-class HDFSWriterTest extends FlatSpec with Matchers with MockFactory {
+class FSOperationsMaintainerTest extends FlatSpec with Matchers with MockFactory {
+
   sealed trait MockFileSystem extends FileSystem {
     override def getUri: URI = ???
 
@@ -36,47 +37,49 @@ class HDFSWriterTest extends FlatSpec with Matchers with MockFactory {
     override def getFileStatus(path: Path): FileStatus = ???
   }
 
-  "writer" should "flush data into hdfs" in {
+  "writer" should "flush data into hdfs" in new MockFileSystem {
     val mockCreate = mockFunction[Path, Boolean, FSDataOutputStream]
     val fSDataOutputStream = mock[FSDataOutputStream]
+    val path = new Path("/")
 
-    val mockFileSystem = new MockFileSystem {
-      override def create(f: Path, overwrite: Boolean): FSDataOutputStream = mockCreate.apply(f, overwrite)
-    }
 
-    mockCreate expects (*, false) returning fSDataOutputStream
+    override def create(f: Path, overwrite: Boolean): FSDataOutputStream = mockCreate.apply(f, overwrite)
 
-    fSDataOutputStream.flush _ expects ()
-    fSDataOutputStream.close _ expects ()
 
-    HDFSWriter(mockFileSystem).writeEventsToHDFS("")
+    mockCreate expects(path, false) returning fSDataOutputStream
+
+    fSDataOutputStream.flush _ expects()
+    fSDataOutputStream.close _ expects()
+
+    FSOperationsMaintainer(this).writeToHDFS(path, "")
   }
 
-  "writer" should "generate files with unique names" in {
+  "writer" should "generate files with unique names" in new MockFileSystem {
     val size = Gen.posNum[Int].sample.get
     val paths = new ListBuffer[String]
 
+    val maintainer = FSOperationsMaintainer(this)
+
     for (i <- 1 to size) {
-      paths += HDFSWriter.getPath().getName
+      paths += maintainer.generateUniquePath.getName
     }
 
     assert(size === paths.distinct.size)
   }
 
-  "outputStream" should "get closed in any case" in {
+  "outputStream" should "get closed in any case" in new MockFileSystem {
     val mockCreate = mockFunction[Path, Boolean, FSDataOutputStream]
     val fSDataOutputStream = mock[FSDataOutputStream]
+    val path = new Path("/")
 
-    val mockFileSystem = new MockFileSystem {
-      override def create(f: Path, overwrite: Boolean): FSDataOutputStream = mockCreate.apply(f, overwrite)
-    }
+    override def create(f: Path, overwrite: Boolean): FSDataOutputStream = mockCreate.apply(f, overwrite)
 
-    mockCreate expects (*, false) returning fSDataOutputStream
 
-    fSDataOutputStream.flush _ expects () throwing new Exception()
-    fSDataOutputStream.close _ expects ()
+    mockCreate expects(path, false) returning fSDataOutputStream
 
-    HDFSWriter(mockFileSystem).writeEventsToHDFS("")
+    fSDataOutputStream.flush _ expects() throwing new Exception()
+    fSDataOutputStream.close _ expects()
+
+    FSOperationsMaintainer(this).writeToHDFS(path, "")
   }
-
 }
