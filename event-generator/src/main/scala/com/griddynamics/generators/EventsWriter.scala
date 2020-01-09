@@ -7,7 +7,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.{Failure, Success, Try}
 
-case class EventsWriter(properties: Properties) {
+case class EventsWriter(propertiesWrapper: PropertiesWrapper) {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   private val defaultFSConfig = "fs.defaultFS"
@@ -17,6 +17,7 @@ case class EventsWriter(properties: Properties) {
   private val maxDelayConfig = "generator.max_delay_in_millis"
   private val redirectsFractionConfig = "generator.redirects_number"
   private val clicksFractionConfig = "generator.clicks_number"
+  private val fsEventsDirectoryConfig = "fs.events.directory"
 
   def writeEvents(): Unit = {
     getFSOperationsMaintainer
@@ -35,10 +36,10 @@ case class EventsWriter(properties: Properties) {
   }
 
   private def getEvents: List[Event] = {
-    val eventsToGenerate = properties.getOrDefault(numberToGenerateConfig, new Integer(1)).asInstanceOf[Int]
-    val maxDelayInMillis = properties.getOrDefault(maxDelayConfig, new java.lang.Long(1L)).asInstanceOf[Long]
-    val redirectsFraction = properties.getOrDefault(redirectsFractionConfig, new Integer(1)).asInstanceOf[Int]
-    val clicksFraction = properties.getOrDefault(clicksFractionConfig, new Integer(1)).asInstanceOf[Int]
+    val eventsToGenerate = propertiesWrapper.getIntProperty(numberToGenerateConfig, new Integer(1))
+    val maxDelayInMillis = propertiesWrapper.getLongProperty(maxDelayConfig, new java.lang.Long(1L))
+    val redirectsFraction = propertiesWrapper.getIntProperty(redirectsFractionConfig, new Integer(1))
+    val clicksFraction = propertiesWrapper.getIntProperty(clicksFractionConfig, new Integer(1))
 
     val eventsGenerator = EventsGenerator(maxDelayInMillis, redirectsFraction, clicksFraction)
 
@@ -49,16 +50,18 @@ case class EventsWriter(properties: Properties) {
   }
 
   private def getFSOperationsMaintainer: Try[FSOperationsMaintainer] = Try {
-    val defaultFS = properties.getProperty(defaultFSConfig)
+    val defaultFS = propertiesWrapper.getProperty(defaultFSConfig)
     if (defaultFS == null) throw
       new IllegalArgumentException("There is no required config fs.defaultFS set ")
-    val useDatanodeHostname = properties
-      .getProperty("dfs.client.use.datanode.hostname", "true")
+    val useDatanodeHostname = propertiesWrapper
+      .getBooleanProperty(useDatanodeHostnameConfig, true)
+    val eventsDirectoryName = propertiesWrapper
+      .getOrDefaultString(fsEventsDirectoryConfig, "/events")
 
     val configuration = new Configuration()
     configuration.set(defaultFSConfig, defaultFS)
-    configuration.set(useDatanodeHostnameConfig, useDatanodeHostname)
+    configuration.set(useDatanodeHostnameConfig, useDatanodeHostname.toString)
 
-    FSOperationsMaintainer(configuration)
+    FSOperationsMaintainer(configuration, eventsDirectoryName)
   }
 }

@@ -25,7 +25,7 @@ case class FSOperationsMaintainer(fs: FileSystem,
   private val id = new AtomicLong(0)
 
   def generateUniquePath: Path =
-    new Path(s"$prefix${System.currentTimeMillis()}_${id.getAndIncrement()}.$extension")
+    new Path(s"$prefix/${System.currentTimeMillis()}_${id.getAndIncrement()}.$extension")
 
   def writeToHDFS(p: Path, eventJson: String): Unit = {
     val outputStream = fs.create(p, false)

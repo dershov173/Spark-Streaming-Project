@@ -1,6 +1,6 @@
 import java.util.Properties
 
-import com.griddynamics.generators.EventsWriter
+import com.griddynamics.generators.{EventsWriter, PropertiesWrapper}
 
 object Application extends App {
 
@@ -8,7 +8,7 @@ object Application extends App {
     val properties = new Properties()
     properties.load(getClass.getResourceAsStream("application.properties"))
 
-    EventsWriter(properties).writeEvents()
+    EventsWriter(PropertiesWrapper(properties)).writeEvents()
   }
 
 }
