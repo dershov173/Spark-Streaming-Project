@@ -4,6 +4,7 @@ import java.util.Properties
 
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
+import play.api.libs.json.JsValue
 
 import scala.util.{Failure, Success, Try}
 
@@ -20,18 +21,28 @@ case class EventsWriter(propertiesWrapper: PropertiesWrapper) {
   private val fsEventsDirectoryConfig = "fs.events.directory"
 
   def writeEvents(): Unit = {
-    getFSOperationsMaintainer
-      .map(maintainer => {
-        getEvents
-          .map(EventToJsonSerializer.eventToJson)
-          .foreach(json => maintainer
+    val maintainer = getFSOperationsMaintainer
+
+    try {
+      def writeEventToGeneratedHDFSPath(tryJson: Try[JsValue]): Try[Unit] = {
+        tryJson.flatMap(json =>
+          maintainer
             .writeToHDFS(maintainer.generateUniquePath, json.toString()))
-        maintainer.close()
-      }) match {
-      case Success(_) =>
-        logger.info("Process has finished successfully")
-      case Failure(exception) =>
-        logger.error("There was an exception occurred", exception)
+      }
+
+      getEvents
+        .map(EventToJsonSerializer.eventToJson)
+        .map(writeEventToGeneratedHDFSPath)
+        .find(_.isFailure) match {
+        case None =>
+          logger.info("Process has finished successfully")
+        case Some(exception) =>
+          logger.error("There was an exception occurred", exception.failed.get)
+      }
+    } catch {
+      case t: Throwable => logger.error("There was an exception occurred", t)
+    } finally {
+      if (maintainer != null) maintainer.close()
     }
   }
 
@@ -49,7 +60,7 @@ case class EventsWriter(propertiesWrapper: PropertiesWrapper) {
       .get
   }
 
-  private def getFSOperationsMaintainer: Try[FSOperationsMaintainer] = Try {
+  private def getFSOperationsMaintainer: FSOperationsMaintainer = {
     val defaultFS = propertiesWrapper.getProperty(defaultFSConfig)
     if (defaultFS == null) throw
       new IllegalArgumentException("There is no required config fs.defaultFS set ")

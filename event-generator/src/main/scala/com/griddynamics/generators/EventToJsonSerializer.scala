@@ -2,8 +2,10 @@ package com.griddynamics.generators
 
 import play.api.libs.json._
 
+import scala.util.Try
+
 object EventToJsonSerializer {
-  def eventToJson(event: Event): JsValue = {
+  def eventToJson(event: Event): Try[JsValue] = {
     implicit val eventWrites: Writes[Event] = new Writes[Event] {
       def writes(event: Event): JsValue = Json.obj(
         "eventType" -> event.eventType,
@@ -12,6 +14,6 @@ object EventToJsonSerializer {
         "url" -> event.url
       )
     }
-    Json.toJson(event)
+    Try(Json.toJson(event))
   }
 }

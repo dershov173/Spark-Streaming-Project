@@ -21,6 +21,7 @@ class EventToJsonSerializerTest extends FlatSpec with Matchers with MockFactory 
     events
       .foreach(e => EventToJsonSerializer
         .eventToJson(e)
+        .get
         .validate match {
         case JsSuccess(value, path) => assert(value === e)
         case _ => assert(false)

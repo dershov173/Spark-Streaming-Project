@@ -7,6 +7,8 @@ import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.util.Try
+
 object FSOperationsMaintainer {
   def apply(conf:Configuration,
             prefix:String = "/events",
@@ -27,7 +29,7 @@ case class FSOperationsMaintainer(fs: FileSystem,
   def generateUniquePath: Path =
     new Path(s"$prefix/${System.currentTimeMillis()}_${id.getAndIncrement()}.$extension")
 
-  def writeToHDFS(p: Path, eventJson: String): Unit = {
+  def writeToHDFS(p: Path, eventJson: String): Try[Unit] = Try {
     val outputStream = fs.create(p, false)
     try {
       outputStream.writeChars(eventJson)
