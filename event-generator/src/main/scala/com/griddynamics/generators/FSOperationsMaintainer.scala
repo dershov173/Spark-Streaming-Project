@@ -10,12 +10,30 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.util.Try
 
 object FSOperationsMaintainer {
-  def apply(conf:Configuration,
-            prefix:String = "/events",
-            extension: String = "json"): FSOperationsMaintainer =
-    FSOperationsMaintainer(FileSystem.get(conf),
-      prefix,
-      extension)
+  private val defaultFSConfig = "fs.defaultFS"
+  private val useDatanodeHostnameConfig = "dfs.client.use.datanode.hostname"
+  private val fsEventsDirectoryConfig = "fs.events.directory"
+  private val extensionConfig = "fs.outputFiles.extension"
+
+  def apply(propertiesWrapper: PropertiesWrapper) : FSOperationsMaintainer = {
+    val defaultFS = propertiesWrapper.getProperty(defaultFSConfig)
+    if (defaultFS == null) throw
+      new IllegalArgumentException("There is no required config fs.defaultFS set ")
+    val useDatanodeHostname = propertiesWrapper
+      .getBooleanProperty(useDatanodeHostnameConfig, true)
+    val eventsDirectoryName = propertiesWrapper
+      .getOrDefaultString(fsEventsDirectoryConfig, "/events")
+    val extension = propertiesWrapper
+      .getOrDefaultString(extensionConfig, "json")
+
+    val configuration = new Configuration()
+    configuration.set(defaultFSConfig, defaultFS)
+    configuration.set(useDatanodeHostnameConfig, useDatanodeHostname.toString)
+
+    val fileSystem = FileSystem.get(configuration)
+
+    FSOperationsMaintainer(fileSystem, eventsDirectoryName, extension)
+  }
 }
 
 case class FSOperationsMaintainer(fs: FileSystem,

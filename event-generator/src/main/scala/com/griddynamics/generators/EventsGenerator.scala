@@ -8,11 +8,24 @@ case class IpAddress(firstDomain: Int, secondDomain: Int, thirdDomain: Int, four
 
 case class Event(eventType: String, ipAddress: String, eventTime: String, url: String)
 
+object EventsGenerator {
+  private val maxDelayConfig = "generator.max_delay_in_millis"
+  private val redirectsFractionConfig = "generator.redirects_number"
+  private val clicksFractionConfig = "generator.clicks_number"
+  def apply(propertiesWrapper: PropertiesWrapper): EventsGenerator = {
+    val maxDelayInMillis = propertiesWrapper.getLongProperty(maxDelayConfig, new java.lang.Long(1L))
+    val redirectsFraction = propertiesWrapper.getIntProperty(redirectsFractionConfig, new Integer(1))
+    val clicksFraction = propertiesWrapper.getIntProperty(clicksFractionConfig, new Integer(1))
+
+    EventsGenerator(maxDelayInMillis, redirectsFraction, clicksFraction)
+  }
+}
+
 case class EventsGenerator(maxDelayInMillis: Long,
                            redirectsFraction: Int,
                            clicksFraction: Int) {
 
-  def generatePortionOfEvents(numberToGenerate:Int): Gen[List[Event]] =
+  def generatePortionOfEvents(numberToGenerate: Int): Gen[List[Event]] =
     Gen.listOfN(numberToGenerate, generateEvent())
 
   def generateEvent(): Gen[Event] = {
