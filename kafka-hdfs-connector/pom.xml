@@ -12,6 +12,11 @@
     <artifactId>kafka-hdfs-connector</artifactId>
     <dependencies>
         <dependency>
+            <artifactId>event-generator</artifactId>
+            <version>${parent.version}</version>
+            <groupId>com.griddynamics</groupId>
+        </dependency>
+        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
         </dependency>
