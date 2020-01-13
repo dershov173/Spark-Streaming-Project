@@ -34,6 +34,10 @@
             <artifactId>scalamock-scalatest-support_${scala.binary.version}</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>connect-api</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
