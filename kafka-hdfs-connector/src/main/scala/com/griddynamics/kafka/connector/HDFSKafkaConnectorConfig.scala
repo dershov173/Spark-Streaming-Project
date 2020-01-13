@@ -11,7 +11,9 @@ object HDFSKafkaConnectorConfig {
   private val BATCH_SIZE_CONFIG = "kafka.connect.batch.size"
   private val BATCH_SIZE_DOC = "Number of data points to retrieve at a time. Defaults to 100 (max value)"
 
-  def apply(parsedConfig: Map[String, String]): HDFSKafkaConnectorConfig = HDFSKafkaConnectorConfig(defaultConf(), parsedConfig)
+  def apply(parsedConfig: Map[String, String]): HDFSKafkaConnectorConfig = HDFSKafkaConnectorConfig(defaultConf(), parsedConfig.asJava)
+
+  def apply(parsedConfig: java.util.Map[String, String]): HDFSKafkaConnectorConfig = HDFSKafkaConnectorConfig(defaultConf(), parsedConfig)
 
   def defaultConf(): ConfigDef = {
     new ConfigDef()
@@ -21,7 +23,7 @@ object HDFSKafkaConnectorConfig {
 }
 
 case class HDFSKafkaConnectorConfig(config: ConfigDef,
-                                    parsedConfig: Map[String, String]) extends AbstractConfig(config, parsedConfig.asJava) {
+                                    parsedConfig: java.util.Map[String, String]) extends AbstractConfig(config, parsedConfig) {
 
   import com.griddynamics.kafka.connector.HDFSKafkaConnectorConfig._
 
