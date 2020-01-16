@@ -25,6 +25,23 @@ class HDFSKafkaSourceTask extends SourceTask {
     initMaintainer(props)
   }
 
+  private def initMaintainer(props: util.Map[String, String]): Unit = {
+    logger.info("Trying to instantiate a FSOperationsMaintainer")
+    val properties = new Properties()
+    properties.putAll(props)
+    fsOperationsMaintainer = FSOperationsMaintainer(PropertiesWrapper(properties))
+    logger.info("FSOperationsMaintainer successfully instantiated")
+  }
+
+  private def calculatePartitionsAndOffsets(): Unit = {
+    val sourceConfigs = context.offsetStorageReader().offset(sourcePartition())
+    nextFileSince = Option(sourceConfigs
+      .get(LAST_READ_FILE_FIELD)
+      .asInstanceOf[String]
+      .toLong)
+      .getOrElse(nextFileSince)
+  }
+
   override def poll(): util.List[SourceRecord] = ???
 
   //  {
@@ -49,24 +66,6 @@ class HDFSKafkaSourceTask extends SourceTask {
   }
 
   override def version(): String = VersionUtil.getVersion
-
-  private def initMaintainer(props: util.Map[String, String]): Unit = {
-    logger.info("Trying to instantiate a FSOperationsMaintainer")
-    val properties = new Properties()
-    properties.putAll(props)
-    fsOperationsMaintainer = FSOperationsMaintainer(PropertiesWrapper(properties))
-    logger.info("FSOperationsMaintainer successfully instantiated")
-  }
-
-  private def calculatePartitionsAndOffsets(): Unit = {
-    val sourceConfigs = context.offsetStorageReader().offset(sourcePartition())
-    nextFileSince = Option(sourceConfigs
-      .get(LAST_READ_FILE_FIELD)
-      .asInstanceOf[String]
-      .toLong)
-      .getOrElse(nextFileSince)
-
-  }
 
   private def sourcePartition(): java.util.Map[String, String] = {
     //    import com.griddynamics.kafka.connector.Schemas._
