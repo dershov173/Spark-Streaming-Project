@@ -44,20 +44,18 @@ class HDFSKafkaSourceTask extends SourceTask {
 
   override def poll(): util.List[SourceRecord] = ???
 
-  //  {
-  //
-  //    logger.info("Connector starts polling events from HDFS to Kafka")
-  //    val eventsDirectory = new Path(fsOperationsMaintainer.eventsDirectoryName)
-  //
-  //
-  //    fsOperationsMaintainer
-  //      .listFiles(eventsDirectory, new PathFilter {
-  //      override def accept(path: Path): Boolean = true
-  //    })
-  //      .toSeq
-  //      .map(st => fsOperationsMaintainer.readFile(st.getPath).toString("UTF-8"))
-  //
-  //  }
+    {
+
+//      logger.info("Connector starts polling events from HDFS to Kafka")
+//      val eventsDirectory = new Path(fsOperationsMaintainer.eventsDirectoryName)
+//
+//
+//      fsOperationsMaintainer
+//        .listFiles(eventsDirectory, EventTimestampPathFilter(nextFileSince))
+//        .toSeq
+//        .map(st => fsOperationsMaintainer.readFile(st.getPath))
+
+    }
 
   override def stop(): Unit = {
     logger.info("Attempting to stop FSOperationsMaintainer")
@@ -68,8 +66,6 @@ class HDFSKafkaSourceTask extends SourceTask {
   override def version(): String = VersionUtil.getVersion
 
   private def sourcePartition(): java.util.Map[String, String] = {
-    //    import com.griddynamics.kafka.connector.Schemas._
-    //    LAST_READ_FILE_FIELD ->
     new util.HashMap[String, String]()
   }
 
