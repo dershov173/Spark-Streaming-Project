@@ -43,8 +43,8 @@ object FSOperationsMaintainer {
 }
 
 case class FSOperationsMaintainer(fs: FileSystem,
-                                  eventsDirectoryName: String,
-                                  private val extension: String) extends AutoCloseable {
+                                  eventsDirectoryName: String = "/events",
+                                  private val extension: String = "json") extends AutoCloseable {
 
   import com.griddynamics.generators.FSOperationsMaintainer._
 
@@ -78,7 +78,7 @@ case class FSOperationsMaintainer(fs: FileSystem,
 
   def mkdirs(p: Path): Boolean = fs.mkdirs(p)
 
-  def readFile(p: Path, bufferSize: Int = defaultBufferSize, encoding: String = defaultEncoding): String = {
+  def readFile(p: Path, bufferSize: Int = defaultBufferSize, encoding: String = defaultEncoding): Try[String] = Try{
     val byteBuffer = new Array[Byte](bufferSize)
     val byteArrayOutputStream = new ByteArrayOutputStream()
 

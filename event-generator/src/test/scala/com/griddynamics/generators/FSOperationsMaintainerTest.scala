@@ -12,6 +12,7 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.collection.mutable.ListBuffer
+import scala.util.Try
 
 class FSOperationsMaintainerTest extends FlatSpec with Matchers with MockFactory {
 
@@ -97,9 +98,9 @@ class FSOperationsMaintainerTest extends FlatSpec with Matchers with MockFactory
 
     mockOpen expects * returning fsDataInputStream
 
-    val actualStr: String = FSOperationsMaintainer(this, "", "").readFile(new Path("/"), bufferSize)
+    val actualStr: Try[String] = FSOperationsMaintainer(this, "", "").readFile(new Path("/"), bufferSize)
 
-    assert(str === actualStr)
+    assert(str === actualStr.get)
 
   }
 }
