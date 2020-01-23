@@ -3,12 +3,12 @@ package com.griddynamics.kafka.connector
 import java.util
 import java.util.Properties
 
-import com.griddynamics.generators.{Event, EventFromJsonDeserializer, FSOperationsMaintainer, PropertiesWrapper}
+import com.griddynamics.generators._
 import com.griddynamics.kafka.connector.HDFSKafkaSourceTask.logger
-import com.griddynamics.kafka.connector.Schemas.{LAST_READ_FILE_FIELD, VALUE_SCHEMA}
-import org.apache.hadoop.fs.{FileStatus, Path}
+import com.griddynamics.kafka.connector.Schemas._
+import org.apache.hadoop.fs.Path
 import org.apache.kafka.connect.data.Struct
-import org.apache.kafka.connect.source.{SourceRecord, SourceTask, SourceTaskContext}
+import org.apache.kafka.connect.source.{SourceRecord, SourceTask}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
@@ -25,7 +25,20 @@ object HDFSKafkaSourceTask extends SourceTask {
 
     val fSOperationsMaintainer = initMaintainer(props)
 
-    hdfsKafkaSourceTask = HDFSKafkaSourceTask(config, fSOperationsMaintainer, context)
+    val nextFileSince: Long = Option(context)
+      .map(_.offsetStorageReader()
+        .offset(sourcePartition(config))
+        .get(LAST_READ_FILE_FIELD)
+        .asInstanceOf[String]
+        .toLong)
+      .getOrElse(0L)
+
+    hdfsKafkaSourceTask = HDFSKafkaSourceTask(config, fSOperationsMaintainer, nextFileSince, EventFromJsonDeserializer)
+  }
+
+  private[connector] def sourcePartition(connectorConfig: HDFSKafkaConnectorConfig): util.Map[String, String] = {
+    Map(DEFAULT_FS -> connectorConfig.getDefaultFS,
+      EVENTS_DIRECTORY -> connectorConfig.getEventsDirectory).asJava
   }
 
   private def initMaintainer(props: util.Map[String, String]): FSOperationsMaintainer = {
@@ -49,15 +62,9 @@ object HDFSKafkaSourceTask extends SourceTask {
 
 private[connector] case class HDFSKafkaSourceTask(config: HDFSKafkaConnectorConfig,
                                                   fsOperationsMaintainer: FSOperationsMaintainer,
-                                                  context: SourceTaskContext) extends AutoCloseable {
-  val nextFileSince: Long = Option(context)
-    .map(_
-      .offsetStorageReader()
-      .offset(sourcePartition())
-      .get(LAST_READ_FILE_FIELD)
-      .asInstanceOf[String]
-      .toLong)
-    .getOrElse(0L)
+                                                  nextFileSince: Long,
+                                                  deserializer: EventDeserializer) extends AutoCloseable {
+
 
   implicit class RicherTry[+T](wrapped: Try[T]) {
     def zip[That](that: => Try[That]): Try[(T, That)] =
@@ -84,12 +91,12 @@ private[connector] case class HDFSKafkaSourceTask(config: HDFSKafkaConnectorConf
       .asJava
   }
 
-  private def tryToConstructSourceRecord(fileStatus: FileStatus): Try[SourceRecord] = {
+  private def tryToConstructSourceRecord(path:Path): Try[SourceRecord] = {
     val triedEventIdentifier = FSPathToEventIdMapper()
-      .map(fileStatus.getPath)
+      .map(path)
     val triedEvent = fsOperationsMaintainer
-      .readFile(fileStatus.getPath)
-      .flatMap(EventFromJsonDeserializer.eventFromJson)
+      .readFile(path)
+      .flatMap(deserializer.deserialize)
 
     val triedTuple = triedEventIdentifier.zip(triedEvent)
     sourceRecord(triedTuple)
@@ -98,7 +105,7 @@ private[connector] case class HDFSKafkaSourceTask(config: HDFSKafkaConnectorConf
   private def sourceRecord(eventTupleTry: Try[(EventIdentifier, Event)]): Try[SourceRecord] = {
     eventTupleTry
       .map(eventTuple =>
-        new SourceRecord(sourcePartition(),
+        new SourceRecord(HDFSKafkaSourceTask.sourcePartition(config),
           sourceOffset(eventTuple._1.timestamp),
           config.getTopic,
           null,
@@ -106,10 +113,6 @@ private[connector] case class HDFSKafkaSourceTask(config: HDFSKafkaConnectorConf
           constructRecordKey(eventTuple._1.originalFileName),
           Schemas.VALUE_SCHEMA,
           constructRecordValue(eventTuple._2)))
-  }
-
-  private def sourcePartition(): java.util.Map[String, String] = {
-    new util.HashMap[String, String]()
   }
 
   private def sourceOffset(lastFileReadTimestamp: Long): java.util.Map[String, String] = {

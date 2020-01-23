@@ -10,6 +10,8 @@ object HDFSKafkaConnectorConfig {
   private val TOPIC_DOC = "Topic to write to"
   private val BATCH_SIZE_CONFIG = "kafka.connect.batch.size"
   private val BATCH_SIZE_DOC = "Number of data points to retrieve at a time. Defaults to 100 (max value)"
+  private val DEFAULT_FS_CONFIG = "kafka.connect.defaultFS"
+  private val DEFAULT_FS_DOC = "Defines File System host:port to connect to"
   private val EVENTS_DIRECTORY_CONFIG = "kafka.connect.events_directory"
   private val EVENTS_DIRECTORY_DOC = "HDFS directory path to read events from"
 
@@ -22,6 +24,7 @@ object HDFSKafkaConnectorConfig {
       .define(TOPIC_CONFIG, Type.STRING, Importance.HIGH, TOPIC_DOC)
       .define(BATCH_SIZE_CONFIG, Type.INT, 100, new BatchSizeValidator(), Importance.LOW, BATCH_SIZE_DOC)
       .define(EVENTS_DIRECTORY_CONFIG, Type.STRING, Importance.HIGH, EVENTS_DIRECTORY_DOC)
+      .define(DEFAULT_FS_CONFIG, Type.STRING, Importance.HIGH, DEFAULT_FS_DOC)
   }
 }
 
@@ -35,6 +38,8 @@ case class HDFSKafkaConnectorConfig(config: ConfigDef,
   def getBatchSIze: String = this.getString(BATCH_SIZE_CONFIG)
 
   def getEventsDirectory: String = this.getString(EVENTS_DIRECTORY_CONFIG)
+
+  def getDefaultFS: String = this.getString(DEFAULT_FS_CONFIG)
 
 }
 

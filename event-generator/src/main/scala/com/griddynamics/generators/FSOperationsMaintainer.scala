@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.permission.FsPermission
-import org.apache.hadoop.fs.{FileStatus, FileSystem, Path, PathFilter}
+import org.apache.hadoop.fs.{FileSystem, Path, PathFilter}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.Try
@@ -72,7 +72,9 @@ case class FSOperationsMaintainer(fs: FileSystem,
     }
   }
 
-  def listFiles(p: Path, filter: PathFilter): Array[FileStatus] = fs.listStatus(p, filter)
+  def listFiles(p: Path, filter: PathFilter): Array[Path] = fs
+    .listStatus(p, filter)
+    .map(_.getPath)
 
   def mkdirs(p: Path, permission: FsPermission): Boolean = fs.mkdirs(p, permission)
 

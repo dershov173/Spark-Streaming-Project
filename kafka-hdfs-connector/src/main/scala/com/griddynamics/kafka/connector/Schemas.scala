@@ -6,13 +6,15 @@ object Schemas {
   val SCHEMA_KEY_NAME = "com.griddynamics.kafka.connector.EventKey"
   val SCHEMA_VALUE_NAME = "com.griddynamcis.kafka.connector.EventValue"
 
-  val FILE_NAME_FIELD = "file_name"
+  val FILE_NAME_FIELD = "fileName"
   val EVENT_TYPE_FIELD = "eventType"
   val IP_ADDRESS_FIELD = "ipAddress"
   val EVENT_TIME_FIELD = "eventTime"
   val URL_FIELD = "url"
 
   val LAST_READ_FILE_FIELD = "lastReadFile"
+  val DEFAULT_FS = "defaultFS"
+  val EVENTS_DIRECTORY = "eventsDirectory"
 
   val KEY_SCHEMA: Schema = SchemaBuilder
     .struct()

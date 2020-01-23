@@ -30,7 +30,7 @@ case class EventsWriter(fsOperationsMaintainer: FSOperationsMaintainer,
       }
 
       getEvents
-        .map(EventToJsonSerializer.eventToJson)
+        .map(EventToJsonSerializer.serialize)
         .map(writeEventToGeneratedHDFSPath)
         .find(_.isFailure) match {
         case None =>

@@ -2,8 +2,8 @@ package com.griddynamics.generators
 
 import org.scalacheck.Gen
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{FlatSpec, FunSuite, Matchers}
-import play.api.libs.json.{JsError, JsPath, JsSuccess, Json, Reads}
+import org.scalatest.{FlatSpec, Matchers}
+import play.api.libs.json.{JsSuccess, Json, Reads}
 
 class EventToJsonSerializerTest extends FlatSpec with Matchers with MockFactory {
   private def generateEvent(): Gen[Event] = {
@@ -20,7 +20,7 @@ class EventToJsonSerializerTest extends FlatSpec with Matchers with MockFactory 
     val events = Gen.listOf(generateEvent()).sample.get
     events
       .foreach(e => EventToJsonSerializer
-        .eventToJson(e)
+        .serialize(e)
         .get
         .validate match {
         case JsSuccess(value, path) => assert(value === e)

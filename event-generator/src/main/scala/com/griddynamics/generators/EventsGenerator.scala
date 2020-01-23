@@ -21,9 +21,9 @@ object EventsGenerator {
   }
 }
 
-case class EventsGenerator(maxDelayInMillis: Long,
-                           redirectsFraction: Int,
-                           clicksFraction: Int) {
+case class EventsGenerator(maxDelayInMillis: Long = 100000L,
+                           redirectsFraction: Int = 5,
+                           clicksFraction: Int = 95) {
 
   def generatePortionOfEvents(numberToGenerate: Int): Gen[List[Event]] =
     Gen.listOfN(numberToGenerate, generateEvent())
