@@ -4,6 +4,7 @@ import java.util
 
 import com.griddynamics.generators.{EventDeserializer, EventFromJsonDeserializer, EventsGenerator, FSOperationsMaintainer}
 import org.apache.hadoop.fs.Path
+import org.apache.kafka.connect.source.SourceRecord
 import org.scalacheck.Gen
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
@@ -24,6 +25,7 @@ class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
     val config = new HDFSKafkaConnectorConfig(HDFSKafkaConnectorConfig.defaultConf(),
       params)
     var latestEventTimestamp = 0L
+
     def pathGenerator(timestampGen: Gen[Long]): Gen[Path] = for {
       timestamp <- timestampGen
       internalId <- Gen.chooseNum(0L, Long.MaxValue)
@@ -53,7 +55,16 @@ class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
     eventDeserializer.deserialize _ expects * repeat eventsNumber returning Success(event)
 
     val task = new HDFSKafkaSourceTask(config, fSOperationsMaintainer, 0L, eventDeserializer)
-    task.poll().size() should be(eventsNumber)
+    private val sourceRecords: util.List[SourceRecord] = task.poll()
+    sourceRecords.size() should be(eventsNumber)
+    sourceRecords
+      .asScala
+      .map(sourceRecord => Option(sourceRecord.sourceOffset()
+        .get(Schemas.LAST_READ_FILE_FIELD)
+        .toString
+        .toLong)
+        .getOrElse(0L))
+      .max should be(latestEventTimestamp)
   }
 
 
