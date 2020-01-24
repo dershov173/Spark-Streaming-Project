@@ -9,13 +9,13 @@ import org.scalacheck.Gen
 import org.scalamock.handlers.{CallHandler, CallHandler2}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
-
 import scala.collection.JavaConverters._
+
+
 import scala.util.{Failure, Success, Try}
+import org.scalacheck.Arbitrary.arbitrary
 
-
-class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
-
+class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
   trait TestContext {
     val fSOperationsMaintainer: FSOperationsMaintainer = mock[FSOperationsMaintainer]
     val eventDeserializer: EventDeserializer = mock[EventDeserializer]
@@ -54,19 +54,19 @@ class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
   }
 
 
-  "task" should "return no source records for empty events list" in new TestContext {
+  "poller" should "return no source records for empty events list" in new TestContext {
     override def files = Array.empty[Path]
     listFiles
 
-    val task = new HDFSKafkaSourceTask(config,
+    val poller = new HDFSEventsPoller(config,
       fSOperationsMaintainer,
-      0L,
+      null,
       eventDeserializer,
       idConstructor)
-    task.poll() should be(empty)
+    poller.poll() should be(empty)
   }
 
-  "task" should "poll all events when nextFileSince is 0 successfully" in new TestContext {
+  "poller" should "poll all events when nextFileSince is 0 successfully" in new TestContext {
     val latestEventTimestamp: Long = Gen.posNum[Long].sample.get
     val eventsNumber: Int = Gen.posNum[Int].sample.get
     override def files: Array[Path] = Gen.listOfN(eventsNumber, pathGenerator()).sample.get.toArray
@@ -76,12 +76,12 @@ class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
     readFile(eventsNumber)
     deserialize(eventsNumber)
 
-    val task = new HDFSKafkaSourceTask(config,
+    val poller = HDFSEventsPoller(config,
       fSOperationsMaintainer,
-      0L,
+      null,
       eventDeserializer,
       idConstructor)
-    val sourceRecords: util.List[SourceRecord] = task.poll()
+    val sourceRecords: util.List[SourceRecord] = poller.poll()
     sourceRecords.size() should be(eventsNumber)
     sourceRecords
       .asScala
@@ -93,11 +93,12 @@ class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
       .max should be(latestEventTimestamp)
   }
 
-  "task" should "properly handle invalid file names" in new TestContext {
+  "poller" should "properly handle invalid file names" in new TestContext {
     val latestEventTimestamp: Long = Gen.posNum[Long].sample.get
     val validFilesNumber: Int = Gen.posNum[Int].sample.get
     val invalidFileNamesNumber = 2
-    val invalidFileNamesGen: Gen[Path] = Gen.alphaStr.map(new Path(_))
+
+    val invalidFileNamesGen: Gen[Path] = arbitrary[String].suchThat(!_.isEmpty).map(new Path(_))
     val eventsNumber: Int = invalidFileNamesNumber + validFilesNumber
 
 
@@ -120,8 +121,12 @@ class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
     readFile(0)
     deserialize(validFilesNumber)
 
-    val task = new HDFSKafkaSourceTask(config, fSOperationsMaintainer, 0L, eventDeserializer, idConstructor)
-    val sourceRecords: util.List[SourceRecord] = task.poll()
+    val poller = new HDFSEventsPoller(config,
+      fSOperationsMaintainer,
+      null,
+      eventDeserializer,
+      idConstructor)
+    val sourceRecords: util.List[SourceRecord] = poller.poll()
     sourceRecords.size() should be(validFilesNumber)
     sourceRecords
       .asScala
@@ -134,7 +139,7 @@ class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
 
   }
 
-  "task" should "properly handle valid files containing corrupted content" in new TestContext {
+  "poller" should "properly handle valid files containing corrupted content" in new TestContext {
     val latestEventTimestamp: Long = Gen.posNum[Long].sample.get
     val validFilesNumber: Int = Gen.posNum[Int].sample.get
     val corruptedContentFilesNumber = 2
@@ -162,8 +167,12 @@ class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
     readFile(eventsNumber)
     deserialize(validFilesNumber)
 
-    val task = new HDFSKafkaSourceTask(config, fSOperationsMaintainer, 0L, eventDeserializer, idConstructor)
-    val sourceRecords: util.List[SourceRecord] = task.poll()
+    val poller = new HDFSEventsPoller(config,
+      fSOperationsMaintainer,
+      null,
+      eventDeserializer,
+      idConstructor)
+    val sourceRecords: util.List[SourceRecord] = poller.poll()
     sourceRecords.size() should be(validFilesNumber)
     sourceRecords
       .asScala
@@ -175,6 +184,5 @@ class HDFSKafkaSourceTaskTest extends FlatSpec with Matchers with MockFactory {
       .max should be(latestEventTimestamp)
 
   }
-
 
 }

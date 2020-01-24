@@ -17,7 +17,7 @@ class HDFSKafkaSourceConnector extends SourceConnector {
     HDFSKafkaConnectorConfig(props)
   }
 
-  override def taskClass(): Class[_ <: Task] = HDFSKafkaSourceTask.getClass
+  override def taskClass(): Class[_ <: Task] = classOf[HDFSKafkaSourceTask]
 
   override def taskConfigs(maxTasks: Int): util.List[util.Map[String, String]] =
     Collections.singletonList(hdfsKafkaConnectorConfig.originalsStrings()) //todo:rework this behaviour
