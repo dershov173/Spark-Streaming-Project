@@ -33,7 +33,11 @@ object HDFSKafkaSourceTask extends SourceTask {
         .toLong)
       .getOrElse(0L)
 
-    hdfsKafkaSourceTask = HDFSKafkaSourceTask(config, fSOperationsMaintainer, nextFileSince, EventFromJsonDeserializer)
+    hdfsKafkaSourceTask = HDFSKafkaSourceTask(config,
+      fSOperationsMaintainer,
+      nextFileSince,
+      EventFromJsonDeserializer,
+      EventIdFromFSPathConstructor())
   }
 
   private[connector] def sourcePartition(connectorConfig: HDFSKafkaConnectorConfig): util.Map[String, String] = {
@@ -63,7 +67,8 @@ object HDFSKafkaSourceTask extends SourceTask {
 private[connector] case class HDFSKafkaSourceTask(config: HDFSKafkaConnectorConfig,
                                                   fsOperationsMaintainer: FSOperationsMaintainer,
                                                   nextFileSince: Long,
-                                                  deserializer: EventDeserializer) extends AutoCloseable {
+                                                  deserializer: EventDeserializer,
+                                                  idConstructor: IdConstructor) extends AutoCloseable {
 
 
   implicit class RicherTry[+T](wrapped: Try[T]) {
@@ -92,8 +97,8 @@ private[connector] case class HDFSKafkaSourceTask(config: HDFSKafkaConnectorConf
   }
 
   private def tryToConstructSourceRecord(path:Path): Try[SourceRecord] = {
-    val triedEventIdentifier = FSPathToEventIdMapper()
-      .map(path)
+    val triedEventIdentifier = idConstructor
+      .constructId(path)
     val triedEvent = fsOperationsMaintainer
       .readFile(path)
       .flatMap(deserializer.deserialize)

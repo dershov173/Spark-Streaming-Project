@@ -6,6 +6,10 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
+trait IdConstructor {
+  def constructId(p: Path): Try[EventIdentifier]
+}
+
 case class EventIdentifier(timestamp: Long,
                            internalId: Long,
                            instanceName: String,
@@ -14,12 +18,12 @@ case class EventIdentifier(timestamp: Long,
 }
 
 
-object FSPathToEventIdMapper {
-  def apply(): FSPathToEventIdMapper = new FSPathToEventIdMapper("_".r)
+object EventIdFromFSPathConstructor {
+  def apply(): EventIdFromFSPathConstructor = new EventIdFromFSPathConstructor("_".r)
 }
 
-case class FSPathToEventIdMapper(splitBy: Regex) {
-  def map(p: Path): Try[EventIdentifier] = Try {
+case class EventIdFromFSPathConstructor(splitBy: Regex) extends IdConstructor {
+  override def constructId(p: Path): Try[EventIdentifier] = Try {
     val strings = splitBy.split(p.getName)
     if (strings.length < 2 || strings.length > 3) return Failure(
       new IllegalStateException(s"Processed file name is not in proper format ${p.getName} for given spliterator $splitBy"))
@@ -38,8 +42,8 @@ case class EventTimestampPathFilter(lastUploadedFileTimestamp: Long) extends Pat
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def accept(path: Path): Boolean = {
-    FSPathToEventIdMapper()
-      .map(path) match {
+    EventIdFromFSPathConstructor()
+      .constructId(path) match {
       case Success(eventIdentifier) => eventIdentifier.timestamp > lastUploadedFileTimestamp
       case Failure(exception) =>
         logger.error(s"There was an exception occurred while trying to process file ${path}", exception)

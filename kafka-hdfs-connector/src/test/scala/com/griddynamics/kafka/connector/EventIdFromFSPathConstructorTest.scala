@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.Success
 
-class FSPathToEventIdMapperTest extends FlatSpec with Matchers with MockFactory {
+class EventIdFromFSPathConstructorTest extends FlatSpec with Matchers with MockFactory {
   "mapper" should "properly parse path \\d+_\\d+ file name" in {
     val timestamp = Gen.posNum[Long].sample.get
     val internalId = Gen.chooseNum(0L, Long.MaxValue).sample.get
@@ -17,7 +17,7 @@ class FSPathToEventIdMapperTest extends FlatSpec with Matchers with MockFactory 
 
     val path = new Path(pathName)
 
-    assert(Success(expectedIdentifier) === FSPathToEventIdMapper().map(path))
+    assert(Success(expectedIdentifier) === EventIdFromFSPathConstructor().constructId(path))
   }
 
   "mapper" should "properly parse path \\d+_\\d+_\\s file name" in {
@@ -30,7 +30,7 @@ class FSPathToEventIdMapperTest extends FlatSpec with Matchers with MockFactory 
 
     val path = new Path(pathName)
 
-    assert(Success(expectedIdentifier) === FSPathToEventIdMapper().map(path))
+    assert(Success(expectedIdentifier) === EventIdFromFSPathConstructor().constructId(path))
   }
 
   "mapper" should "return failure in case if there are more than 3 groups" in {
@@ -42,7 +42,7 @@ class FSPathToEventIdMapperTest extends FlatSpec with Matchers with MockFactory 
 
     val path = new Path(pathName)
 
-    assert(FSPathToEventIdMapper().map(path).isFailure)
+    assert(EventIdFromFSPathConstructor().constructId(path).isFailure)
   }
 
   "mapper" should "return failure in case if path totally violates pattern" in {
@@ -50,7 +50,7 @@ class FSPathToEventIdMapperTest extends FlatSpec with Matchers with MockFactory 
 
     val path = new Path(pathName)
 
-    assert(FSPathToEventIdMapper().map(path).isFailure)
+    assert(EventIdFromFSPathConstructor().constructId(path).isFailure)
   }
 
 
