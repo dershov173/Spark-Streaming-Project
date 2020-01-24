@@ -13,23 +13,31 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 trait EventsPoller {
-  def poll() : java.util.List[SourceRecord]
+  def poll(): java.util.List[SourceRecord]
 }
 
 case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
                             fsOperationsMaintainer: FSOperationsMaintainer,
-                            context:SourceTaskContext,
+                            context: SourceTaskContext,
                             deserializer: EventDeserializer,
                             idConstructor: IdConstructor) extends AutoCloseable {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   private val nextFileSince: Long = Option(context)
-    .map(_.offsetStorageReader()
-      .offset(sourcePartition(config))
-      .get(LAST_READ_FILE_FIELD)
-      .asInstanceOf[String]
-      .toLong)
+    .flatMap(ctx => {
+      logger.info(s"Task Context: ${ctx.toString}")
+      Option(ctx.offsetStorageReader())
+    })
+    .flatMap(reader => {
+      logger.info(s"Offset reader: ${reader.toString}")
+      Option(reader.offset(sourcePartition(config)))
+    })
+    .flatMap(offset => {
+      logger.info(s"Offset: ${offset.toString}")
+      Option(offset.get(LAST_READ_FILE_FIELD))
+    })
+    .map(_.asInstanceOf[String].toLong)
     .getOrElse(0L)
 
   implicit class RicherTry[+T](wrapped: Try[T]) {
@@ -57,7 +65,7 @@ case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
       .asJava
   }
 
-  private def tryToConstructSourceRecord(path:Path): Try[SourceRecord] = {
+  private def tryToConstructSourceRecord(path: Path): Try[SourceRecord] = {
     val triedEventIdentifier = idConstructor
       .constructId(path)
     val triedEvent = fsOperationsMaintainer

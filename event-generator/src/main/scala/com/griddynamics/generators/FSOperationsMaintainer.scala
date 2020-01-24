@@ -35,6 +35,7 @@ object FSOperationsMaintainer {
     val configuration = new Configuration()
     configuration.set(defaultFSConfig, defaultFS)
     configuration.set(useDatanodeHostnameConfig, useDatanodeHostname.toString)
+    configuration.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
 
     val fileSystem = FileSystem.get(configuration)
 

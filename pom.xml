@@ -19,8 +19,8 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <scala.version>2.11.8</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
+        <scala.version>2.12.1</scala.version>
+        <scala.binary.version>2.12</scala.binary.version>
 
         <jackson.version>2.10.1</jackson.version>
         <scalaj.version>2.3.0</scalaj.version>
@@ -141,6 +141,30 @@
                         <source>1.8</source>
                         <target>1.8</target>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>2.6</version>
+                    <configuration>
+<!--                        <archive>-->
+<!--                            <manifest>-->
+<!--                                <mainClass>com.myorg.myproject.spark.Main</mainClass>-->
+<!--                            </manifest>-->
+<!--                        </archive>-->
+                        <descriptorRefs>
+                            <descriptorRef>jar-with-dependencies</descriptorRef>
+                        </descriptorRefs>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>make-assembly</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>single</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
