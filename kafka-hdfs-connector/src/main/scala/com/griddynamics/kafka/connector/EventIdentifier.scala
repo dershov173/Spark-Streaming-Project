@@ -19,20 +19,26 @@ case class EventIdentifier(timestamp: Long,
 
 
 object EventIdFromFSPathConstructor {
-  def apply(): EventIdFromFSPathConstructor = new EventIdFromFSPathConstructor("_".r)
+  private val timestampIdx = 0
+  private val internalIdIdx = 1
+  private val instanceNameIdx = 2
+  private val minDelimitedFileNameLength: Int  = 3
+  private val maxDelimitedFileNameLength: Int = 4
+  def apply(): EventIdFromFSPathConstructor = new EventIdFromFSPathConstructor("[._]".r)
 }
 
 case class EventIdFromFSPathConstructor(splitBy: Regex) extends IdConstructor {
+  import com.griddynamics.kafka.connector.EventIdFromFSPathConstructor._
   override def constructId(p: Path): Try[EventIdentifier] = Try {
     val strings = splitBy.split(p.getName)
-    if (strings.length < 2 || strings.length > 3) return Failure(
+    if (strings.length < minDelimitedFileNameLength || strings.length > maxDelimitedFileNameLength) return Failure(
       new IllegalStateException(s"Processed file name is not in proper format ${p.getName} for given spliterator $splitBy"))
 
-    val timestamp = strings(0).toLong
-    val internalId = strings(1).toLong
+    val timestamp = strings(timestampIdx).toLong
+    val internalId = strings(internalIdIdx).toLong
     val instanceNameOpt =
-      if (strings.length == 3)
-        strings(2)
+      if (strings.length == maxDelimitedFileNameLength)
+        strings(instanceNameIdx)
       else null
     EventIdentifier(timestamp, internalId, instanceNameOpt, p.getName)
   }

@@ -19,7 +19,7 @@ class EventTimestampPathFilterTest extends FlatSpec with Matchers with MockFacto
     val lastUploadedFileTimestamp = Gen.chooseNum(timestamp, Long.MaxValue).sample.get
     val internalId = Gen.chooseNum(0L, Long.MaxValue).sample.get
 
-    val path = new Path(s"${timestamp}_$internalId")
+    val path = new Path(s"${timestamp}_$internalId.csv")
 
     assert(!EventTimestampPathFilter(lastUploadedFileTimestamp).accept(path))
   }
@@ -29,7 +29,7 @@ class EventTimestampPathFilterTest extends FlatSpec with Matchers with MockFacto
     val timestamp = Gen.chooseNum(lastUploadedFileTimestamp + 1, Long.MaxValue).sample.get
     val internalId = Gen.chooseNum(0L, Long.MaxValue).sample.get
 
-    val path = new Path(s"${timestamp}_$internalId")
+    val path = new Path(s"${timestamp}_$internalId.json")
 
     assert(EventTimestampPathFilter(lastUploadedFileTimestamp).accept(path))
   }
