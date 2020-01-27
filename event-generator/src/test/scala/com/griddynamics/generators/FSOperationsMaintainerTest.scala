@@ -54,14 +54,14 @@ class FSOperationsMaintainerTest extends FlatSpec with Matchers with MockFactory
     fSDataOutputStream.flush _ expects()
     fSDataOutputStream.close _ expects()
 
-    FSOperationsMaintainer(this, "", "").writeToHDFS(path, "")
+    FSOperationsMaintainer(this).writeToHDFS(path, "")
   }
 
   "writer" should "generate files with unique names" in new MockFileSystem {
     val size = Gen.posNum[Int].sample.get
     val paths = new ListBuffer[String]
 
-    val maintainer = FSOperationsMaintainer(this, "", "")
+    val maintainer = FSOperationsMaintainer(this)
 
     for (i <- 1 to size) {
       paths += maintainer.generateUniquePath.getName
@@ -83,7 +83,7 @@ class FSOperationsMaintainerTest extends FlatSpec with Matchers with MockFactory
     fSDataOutputStream.flush _ expects() throwing new Exception()
     fSDataOutputStream.close _ expects()
 
-    FSOperationsMaintainer(this, "", "").writeToHDFS(path, "")
+    FSOperationsMaintainer(this).writeToHDFS(path, "")
   }
 
 
@@ -98,7 +98,7 @@ class FSOperationsMaintainerTest extends FlatSpec with Matchers with MockFactory
 
     mockOpen expects * returning fsDataInputStream
 
-    val actualStr: Try[String] = FSOperationsMaintainer(this, "", "").readFile(new Path("/"), bufferSize)
+    val actualStr: Try[String] = FSOperationsMaintainer(this).readFile(new Path("/"), bufferSize)
 
     assert(str === actualStr.get)
 

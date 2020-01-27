@@ -1,7 +1,6 @@
 package com.griddynamics.generators
 
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.libs.json.JsValue
 
 import scala.util.Try
 
@@ -23,10 +22,10 @@ case class EventsWriter(fsOperationsMaintainer: FSOperationsMaintainer,
 
   import com.griddynamics.generators.EventsWriter._
   def writeEvents(): Unit = {
-      def writeEventToGeneratedHDFSPath(tryJson: Try[JsValue]): Try[Unit] = {
+      def writeEventToGeneratedHDFSPath(tryJson: Try[String]): Try[Unit] = {
         tryJson.flatMap(json =>
           fsOperationsMaintainer
-            .writeToHDFS(fsOperationsMaintainer.generateUniquePath, json.toString()))
+            .writeToHDFS(fsOperationsMaintainer.generateUniquePath, json))
       }
 
       getEvents

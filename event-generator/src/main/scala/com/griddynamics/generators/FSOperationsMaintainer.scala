@@ -1,11 +1,10 @@
 package com.griddynamics.generators
 
-import java.io.ByteArrayOutputStream
 import java.util.concurrent.atomic.AtomicLong
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.permission.FsPermission
-import org.apache.hadoop.fs.{FileSystem, Path, PathFilter}
+import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path, PathFilter}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.Try
@@ -55,12 +54,12 @@ case class FSOperationsMaintainer(fs: FileSystem,
   private val id = new AtomicLong(0)
 
   def generateUniquePath: Path =
-    new Path(s"$eventsDirectoryName/${id.getAndIncrement()}_${System.currentTimeMillis()}.$extension")
+    new Path(s"$eventsDirectoryName/${System.currentTimeMillis()}_${id.getAndIncrement()}.$extension")
 
   def writeToHDFS(p: Path, eventJson: String): Try[Unit] = Try {
     val outputStream = fs.create(p, false)
     try {
-      outputStream.writeChars(eventJson)
+      outputStream.writeUTF(eventJson)
       outputStream.flush()
 
       logger.info("event flushed to hdfs {}", eventJson)
@@ -82,20 +81,26 @@ case class FSOperationsMaintainer(fs: FileSystem,
   def mkdirs(p: Path): Boolean = fs.mkdirs(p)
 
   def readFile(p: Path, bufferSize: Int = defaultBufferSize, encoding: String = defaultEncoding): Try[String] = Try{
-    val byteBuffer = new Array[Byte](bufferSize)
-    val byteArrayOutputStream = new ByteArrayOutputStream()
+//    val byteBuffer = new Array[Byte](bufferSize)
+//    val byteArrayOutputStream = new ByteArrayOutputStream()
 
-    val inputStream = fs.open(p)
-    var readCount:Int = 0
-
-    def readBytes(): Boolean = {
-      readCount = inputStream.read(byteBuffer)
-      readCount > -1
+    var inputStream: FSDataInputStream = null
+    try {
+      inputStream = fs.open(p)
+      inputStream.readUTF()
+    } finally {
+      if (inputStream != null) inputStream.close()
     }
-    while (readBytes()) {
-      byteArrayOutputStream.write(byteBuffer, 0, readCount)
-    }
-    byteArrayOutputStream.toString(encoding)
+//    var readCount:Int = 0
+//
+//    def readBytes(): Boolean = {
+//      readCount = inputStream.read(byteBuffer)
+//      readCount > -1
+//    }
+//    while (readBytes()) {
+//      byteArrayOutputStream.write(byteBuffer, 0, readCount)
+//    }
+//    byteArrayOutputStream.toString(encoding)
   }
 
 }
