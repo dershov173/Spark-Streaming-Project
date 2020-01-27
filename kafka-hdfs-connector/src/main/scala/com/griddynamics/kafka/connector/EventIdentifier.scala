@@ -48,6 +48,7 @@ case class EventTimestampPathFilter(lastUploadedFileTimestamp: Long) extends Pat
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def accept(path: Path): Boolean = {
+    logger.info("PathFilter with following lastUploadedFileTimestamp= {} has been applied", lastUploadedFileTimestamp)
     EventIdFromFSPathConstructor()
       .constructId(path) match {
       case Success(eventIdentifier) => eventIdentifier.timestamp > lastUploadedFileTimestamp
