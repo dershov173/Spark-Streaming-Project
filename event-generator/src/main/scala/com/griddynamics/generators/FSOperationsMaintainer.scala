@@ -25,7 +25,7 @@ object FSOperationsMaintainer {
     if (defaultFS == null) throw
       new IllegalArgumentException("There is no required config fs.defaultFS set ")
     val useDatanodeHostname = propertiesWrapper
-      .getBooleanProperty(useDatanodeHostnameConfig, true)
+      .getBooleanProperty(useDatanodeHostnameConfig, false)
     val eventsDirectoryName = propertiesWrapper
       .getOrDefaultString(fsEventsDirectoryConfig, "/events")
     val extension = propertiesWrapper
