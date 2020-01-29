@@ -20,9 +20,4 @@ class EventFromJsonDeserializerTest extends FlatSpec with Matchers {
     triedEvents.foreach(println)
     assert(events == triedEvents)
   }
-
-  "deserializer" should "deserialize some event" in {
-    val eventString = "?{\"eventType\":\"click\",\"ipAddress\":\"83.0.232.0\",\"eventTime\":\"1580126003372\",\"url\":\"https://mvnrepository.com/artifact/org.scalacheck/scalacheck_2.11/1.14.0\"}"
-    println(EventFromJsonDeserializer.deserialize(eventString))
-  }
 }

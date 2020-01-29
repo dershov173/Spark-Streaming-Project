@@ -39,7 +39,7 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
       idConstructor.constructId _ expects * repeat repeatsNumber returning Success(EventIdentifier(timestamp, 0L, "", ""))
 
     def readFile(repeatsNumber: Int): CallHandler[Try[String]]#Derived =
-      fSOperationsMaintainer.readFile _ expects(*, *, *) repeat repeatsNumber returning Success(content)
+      fSOperationsMaintainer.readFile _ expects * repeat repeatsNumber returning Success(content)
 
     def deserialize(repeatsNumber: Int): CallHandler[Try[Event]]#Derived =
       eventDeserializer.deserialize _ expects * repeat repeatsNumber returning Success(event)
@@ -109,10 +109,10 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
     override def readFile(value: Int): CallHandler[Try[String]]#Derived = {
       fSOperationsMaintainer.readFile _ expects where {
-        (p: Path, _, _) => validFiles.contains(p)
+        p: Path => validFiles.contains(p)
       } repeat validFilesNumber returning Success(content)
       fSOperationsMaintainer.readFile _ expects where {
-        (p: Path, _, _) => invalidFileNames.contains(p)
+        p: Path => invalidFileNames.contains(p)
       } repeat invalidFileNamesNumber returning Failure(new Exception())
     }
 

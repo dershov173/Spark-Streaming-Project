@@ -48,6 +48,8 @@ case class FSOperationsMaintainer(fs: FileSystem,
 
   import com.griddynamics.generators.FSOperationsMaintainer._
 
+  def create(p: Path, overwrite: Boolean): CustomFSDataOutputStream = CustomFSDataOutputStream(fs.create(p, overwrite))
+
   override def close(): Unit = fs.close()
 
 
@@ -57,7 +59,7 @@ case class FSOperationsMaintainer(fs: FileSystem,
     new Path(s"$eventsDirectoryName/${System.currentTimeMillis()}_${id.getAndIncrement()}.$extension")
 
   def writeToHDFS(p: Path, eventJson: String): Try[Unit] = Try {
-    val outputStream = fs.create(p, false)
+    val outputStream = this.create(p, false)
     try {
       outputStream.writeUTF(eventJson)
       outputStream.flush()
@@ -80,10 +82,7 @@ case class FSOperationsMaintainer(fs: FileSystem,
 
   def mkdirs(p: Path): Boolean = fs.mkdirs(p)
 
-  def readFile(p: Path, bufferSize: Int = defaultBufferSize, encoding: String = defaultEncoding): Try[String] = Try{
-//    val byteBuffer = new Array[Byte](bufferSize)
-//    val byteArrayOutputStream = new ByteArrayOutputStream()
-
+  def readFile(p: Path): Try[String] = Try {
     var inputStream: FSDataInputStream = null
     try {
       inputStream = fs.open(p)
@@ -91,16 +90,6 @@ case class FSOperationsMaintainer(fs: FileSystem,
     } finally {
       if (inputStream != null) inputStream.close()
     }
-//    var readCount:Int = 0
-//
-//    def readBytes(): Boolean = {
-//      readCount = inputStream.read(byteBuffer)
-//      readCount > -1
-//    }
-//    while (readBytes()) {
-//      byteArrayOutputStream.write(byteBuffer, 0, readCount)
-//    }
-//    byteArrayOutputStream.toString(encoding)
   }
 
 }
