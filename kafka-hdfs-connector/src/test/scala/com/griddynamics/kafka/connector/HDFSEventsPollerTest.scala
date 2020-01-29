@@ -1,6 +1,7 @@
 package com.griddynamics.kafka.connector
 
 import java.util
+import java.util.concurrent.atomic.AtomicLong
 
 import com.griddynamics.generators.{Event, EventDeserializer, EventsGenerator, FSOperationsMaintainer}
 import org.apache.hadoop.fs.{Path, PathFilter}
@@ -9,9 +10,8 @@ import org.scalacheck.Gen
 import org.scalamock.handlers.{CallHandler, CallHandler2}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
+
 import scala.collection.JavaConverters._
-
-
 import scala.util.{Failure, Success, Try}
 import org.scalacheck.Arbitrary.arbitrary
 
@@ -60,7 +60,7 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
     val poller = new HDFSEventsPoller(config,
       fSOperationsMaintainer,
-      null,
+      new AtomicLong(0L),
       eventDeserializer,
       idConstructor)
     poller.poll() should be(empty)
@@ -78,7 +78,7 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
     val poller = HDFSEventsPoller(config,
       fSOperationsMaintainer,
-      null,
+      new AtomicLong(0L),
       eventDeserializer,
       idConstructor)
     val sourceRecords: util.List[SourceRecord] = poller.poll()
@@ -123,7 +123,7 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
     val poller = new HDFSEventsPoller(config,
       fSOperationsMaintainer,
-      null,
+      new AtomicLong(0L),
       eventDeserializer,
       idConstructor)
     val sourceRecords: util.List[SourceRecord] = poller.poll()
@@ -169,7 +169,7 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
     val poller = new HDFSEventsPoller(config,
       fSOperationsMaintainer,
-      null,
+      new AtomicLong(0L),
       eventDeserializer,
       idConstructor)
     val sourceRecords: util.List[SourceRecord] = poller.poll()
