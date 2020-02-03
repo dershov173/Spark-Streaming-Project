@@ -101,14 +101,16 @@ case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
   }
 
   private def sourceOffset(lastEventIdentifier: EventIdentifier): java.util.Map[String, String] = {
-    val latestReadFileInternalId = scala.math.max(nextFileInternalId.get(), lastEventIdentifier.internalId)
-    nextFileInternalId.set(latestReadFileInternalId)
+    if (nextFileGeneratedTimestamp.get < lastEventIdentifier.timestamp) {
+      nextFileInternalId.set(lastEventIdentifier.internalId)
+      nextFileGeneratedTimestamp.set(lastEventIdentifier.timestamp)
+    } else {
+      val latestReadFileInternalId = scala.math.max(nextFileInternalId.get, lastEventIdentifier.internalId)
+      nextFileInternalId.set(latestReadFileInternalId)
+    }
 
-    val latestReadFileGeneratedTimestamp = scala.math.max(nextFileGeneratedTimestamp.get(), lastEventIdentifier.timestamp)
-    nextFileGeneratedTimestamp.set(latestReadFileGeneratedTimestamp)
-
-    Map(LAST_READ_FILE_INTERNAL_ID_FIELD -> latestReadFileInternalId.toString,
-      LAST_READ_FILE_GENERATED_TIMESTAMP -> latestReadFileGeneratedTimestamp.toString).asJava
+    Map(LAST_READ_FILE_INTERNAL_ID_FIELD -> nextFileInternalId.get.toString,
+      LAST_READ_FILE_GENERATED_TIMESTAMP -> nextFileGeneratedTimestamp.get.toString).asJava
   }
 
   override def close(): Unit = {

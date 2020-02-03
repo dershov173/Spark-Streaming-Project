@@ -45,6 +45,7 @@ object FSOperationsMaintainer {
 case class FSOperationsMaintainer(fs: FileSystem,
                                   eventsDirectoryName: String = "/events",
                                   private val extension: String = "json") extends AutoCloseable {
+  private val creationTimestamp: Long = System.currentTimeMillis()
 
   import com.griddynamics.generators.FSOperationsMaintainer._
 
@@ -56,7 +57,7 @@ case class FSOperationsMaintainer(fs: FileSystem,
   private val id = new AtomicLong(1)
 
   def generateUniquePath: Path =
-    new Path(s"$eventsDirectoryName/${System.currentTimeMillis()}_${id.getAndIncrement()}.$extension")
+    new Path(s"$eventsDirectoryName/${creationTimestamp}_${id.getAndIncrement()}.$extension")
 
   def writeToHDFS(p: Path, eventJson: String): Try[Unit] = Try {
     val outputStream = this.create(p, false)
