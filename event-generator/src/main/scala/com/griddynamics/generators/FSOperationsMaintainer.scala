@@ -53,7 +53,7 @@ case class FSOperationsMaintainer(fs: FileSystem,
   override def close(): Unit = fs.close()
 
 
-  private val id = new AtomicLong(0)
+  private val id = new AtomicLong(1)
 
   def generateUniquePath: Path =
     new Path(s"$eventsDirectoryName/${System.currentTimeMillis()}_${id.getAndIncrement()}.$extension")

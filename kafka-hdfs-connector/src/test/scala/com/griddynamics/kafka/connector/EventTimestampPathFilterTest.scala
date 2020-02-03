@@ -27,7 +27,7 @@ class EventTimestampPathFilterTest extends FlatSpec with Matchers with MockFacto
   "filter" should "return true for all files uploaded after lastUploadedFileTimestamp" in {
     val lastUploadedFileTimestamp = Gen.posNum[Long].sample.get
     val timestamp = Gen.chooseNum(lastUploadedFileTimestamp + 1, Long.MaxValue).sample.get
-    val internalId = Gen.chooseNum(0L, Long.MaxValue).sample.get
+    val internalId = Gen.posNum[Long].sample.get
 
     val path = new Path(s"${timestamp}_$internalId.json")
 
