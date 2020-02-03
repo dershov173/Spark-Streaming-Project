@@ -12,7 +12,8 @@ object Schemas {
   val EVENT_TIME_FIELD = "eventTime"
   val URL_FIELD = "url"
 
-  val LAST_READ_FILE_FIELD = "lastReadFile"
+  val LAST_READ_FILE_INTERNAL_ID_FIELD = "lastReadFileInternalId"
+  val LAST_READ_FILE_GENERATED_TIMESTAMP = "lastReadFileGeneratedTimestamp"
   val DEFAULT_FS = "defaultFS"
   val EVENTS_DIRECTORY = "eventsDirectory"
 

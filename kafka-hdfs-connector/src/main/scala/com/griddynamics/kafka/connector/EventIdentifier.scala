@@ -44,14 +44,17 @@ case class EventIdFromFSPathConstructor(splitBy: Regex) extends IdConstructor {
   }
 }
 
-case class EventTimestampPathFilter(lastUploadedFileTimestamp: Long) extends PathFilter {
+case class EventTimestampPathFilter(lastUploadedFileInternalId: Long,
+                                    generatedTimestamp: Long) extends PathFilter {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def accept(path: Path): Boolean = {
-    logger.info("PathFilter with following lastUploadedFileTimestamp= {} has been applied", lastUploadedFileTimestamp)
+    logger.info("PathFilter with following lastUploadedFileTimestamp= {} has been applied", lastUploadedFileInternalId)
     EventIdFromFSPathConstructor()
       .constructId(path) match {
-      case Success(eventIdentifier) => eventIdentifier.timestamp > lastUploadedFileTimestamp
+      case Success(eventIdentifier) =>
+        eventIdentifier.internalId > lastUploadedFileInternalId &&
+        eventIdentifier.timestamp > generatedTimestamp
       case Failure(exception) =>
         logger.error(s"There was an exception occurred while trying to process file ${path}", exception)
         false

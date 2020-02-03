@@ -19,11 +19,17 @@ class HDFSKafkaSourceTask extends SourceTask {
     val config = HDFSKafkaConnectorConfig(props)
 
     val fSOperationsMaintainer = initMaintainer(props)
-    val nextFileSince = getNextFileSinceTimestamp(config)
+    val lastProcessedFileInternalId = getConfigValueFor(config, Schemas.LAST_READ_FILE_INTERNAL_ID_FIELD)
+    val lastProcessedFileGeneratedTimestamp = getConfigValueFor(config, Schemas.LAST_READ_FILE_GENERATED_TIMESTAMP)
+
+    logger.info("The events directory will be traversed starting with timestamp = {} and internalId = {}",
+      lastProcessedFileGeneratedTimestamp,
+      lastProcessedFileInternalId)
 
     hdfsEventsPoller = HDFSEventsPoller(config,
       fSOperationsMaintainer,
-      new AtomicLong(nextFileSince),
+      new AtomicLong(lastProcessedFileInternalId),
+      new AtomicLong(lastProcessedFileGeneratedTimestamp),
       EventFromJsonDeserializer,
       EventIdFromFSPathConstructor())
   }
@@ -35,22 +41,21 @@ class HDFSKafkaSourceTask extends SourceTask {
     FSOperationsMaintainer(PropertiesWrapper(properties))
   }
 
-  private def getNextFileSinceTimestamp(config: HDFSKafkaConnectorConfig) : Long = {
+  private def getConfigValueFor(config: HDFSKafkaConnectorConfig, key:String) : Long = {
     logger.info("Loading task with Context = {}", context.toString)
-    val nextFileSinceOpt = for {
+    val confValueOpt = for {
       contextOpt <- Option(context)
       offsetStorageReaderOpt <- Option(contextOpt.offsetStorageReader())
       configsOpt <- Option(offsetStorageReaderOpt.offset(HDFSEventsPoller.sourcePartition(config)))
-      lastReadFileTmstOpt <- Option(configsOpt.get(Schemas.LAST_READ_FILE_FIELD))
-    } yield lastReadFileTmstOpt
+      confValue <- Option(configsOpt.get(key))
+    } yield confValue
 
-    val nextFileSince = nextFileSinceOpt match {
+    val actualConfValue = confValueOpt match {
       case Some(l: java.lang.Long) => l.longValue()
       case Some(s: String) => s.toLong
       case _ => 0L
     }
-    logger.info("The events directory will be traversed starting with timestamp = {}", nextFileSince)
-    nextFileSince
+    actualConfValue
   }
 
   override def poll(): util.List[SourceRecord] = {

@@ -11,7 +11,7 @@ class EventTimestampPathFilterTest extends FlatSpec with Matchers with MockFacto
 
     val path = new Path(pathName)
 
-    assert(!EventTimestampPathFilter(0L).accept(path))
+    assert(!EventTimestampPathFilter(0L, 0L).accept(path))
   }
 
   "filter" should "return false for all files uploaded earlier than lastUploadedFileTimestamp" in {
@@ -21,7 +21,7 @@ class EventTimestampPathFilterTest extends FlatSpec with Matchers with MockFacto
 
     val path = new Path(s"${timestamp}_$internalId.csv")
 
-    assert(!EventTimestampPathFilter(lastUploadedFileTimestamp).accept(path))
+    assert(!EventTimestampPathFilter(0L, lastUploadedFileTimestamp).accept(path))
   }
 
   "filter" should "return true for all files uploaded after lastUploadedFileTimestamp" in {
@@ -31,7 +31,7 @@ class EventTimestampPathFilterTest extends FlatSpec with Matchers with MockFacto
 
     val path = new Path(s"${timestamp}_$internalId.json")
 
-    assert(EventTimestampPathFilter(lastUploadedFileTimestamp).accept(path))
+    assert(EventTimestampPathFilter(0L, lastUploadedFileTimestamp).accept(path))
   }
 
 }

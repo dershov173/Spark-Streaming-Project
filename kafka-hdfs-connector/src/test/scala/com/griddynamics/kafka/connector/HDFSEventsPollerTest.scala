@@ -35,8 +35,8 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
     def listFiles: CallHandler2[Path, PathFilter, Array[Path]] = fSOperationsMaintainer.listFiles _ expects(*, *) returning files
 
-    def constructId(timestamp:Long, repeatsNumber: Int): CallHandler[Try[EventIdentifier]]#Derived =
-      idConstructor.constructId _ expects * repeat repeatsNumber returning Success(EventIdentifier(timestamp, 0L, "", ""))
+    def constructId(id: Long, timestamp:Long, repeatsNumber: Int): CallHandler[Try[EventIdentifier]]#Derived =
+      idConstructor.constructId _ expects * repeat repeatsNumber returning Success(EventIdentifier(timestamp, id, "", ""))
 
     def readFile(repeatsNumber: Int): CallHandler[Try[String]]#Derived =
       fSOperationsMaintainer.readFile _ expects * repeat repeatsNumber returning Success(content)
@@ -61,23 +61,26 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
     val poller = new HDFSEventsPoller(config,
       fSOperationsMaintainer,
       new AtomicLong(0L),
+      new AtomicLong(0L),
       eventDeserializer,
       idConstructor)
     poller.poll() should be(empty)
   }
 
   "poller" should "poll all events when nextFileSince is 0 successfully" in new TestContext {
-    val latestEventTimestamp: Long = Gen.posNum[Long].sample.get
+    val latestFileInternalId: Long = Gen.posNum[Long].sample.get
+    val latestFileGeneratedTimestamp: Long = Gen.posNum[Long].sample.get
     val eventsNumber: Int = Gen.posNum[Int].sample.get
     override def files: Array[Path] = Gen.listOfN(eventsNumber, pathGenerator()).sample.get.toArray
 
     listFiles
-    constructId(latestEventTimestamp, eventsNumber)
+    constructId(latestFileInternalId, latestFileGeneratedTimestamp, eventsNumber)
     readFile(eventsNumber)
     deserialize(eventsNumber)
 
     val poller = HDFSEventsPoller(config,
       fSOperationsMaintainer,
+      new AtomicLong(0L),
       new AtomicLong(0L),
       eventDeserializer,
       idConstructor)
@@ -86,15 +89,16 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
     sourceRecords
       .asScala
       .map(sourceRecord => Option(sourceRecord.sourceOffset()
-        .get(Schemas.LAST_READ_FILE_FIELD)
+        .get(Schemas.LAST_READ_FILE_INTERNAL_ID_FIELD)
         .toString
         .toLong)
         .getOrElse(0L))
-      .max should be(latestEventTimestamp)
+      .max should be(latestFileInternalId)
   }
 
   "poller" should "properly handle invalid file names" in new TestContext {
-    val latestEventTimestamp: Long = Gen.posNum[Long].sample.get
+    val latestFileInternalId: Long = Gen.posNum[Long].sample.get
+    val latestFileGeneratedTimestamp: Long = Gen.posNum[Long].sample.get
     val validFilesNumber: Int = Gen.posNum[Int].sample.get
     val invalidFileNamesNumber = 2
 
@@ -117,12 +121,13 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
     }
 
     listFiles
-    constructId(latestEventTimestamp, eventsNumber)
+    constructId(latestFileInternalId, latestFileGeneratedTimestamp, eventsNumber)
     readFile(0)
     deserialize(validFilesNumber)
 
     val poller = new HDFSEventsPoller(config,
       fSOperationsMaintainer,
+      new AtomicLong(0L),
       new AtomicLong(0L),
       eventDeserializer,
       idConstructor)
@@ -131,16 +136,17 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
     sourceRecords
       .asScala
       .map(sourceRecord => Option(sourceRecord.sourceOffset()
-        .get(Schemas.LAST_READ_FILE_FIELD)
+        .get(Schemas.LAST_READ_FILE_INTERNAL_ID_FIELD)
         .toString
         .toLong)
         .getOrElse(0L))
-      .max should be(latestEventTimestamp)
+      .max should be(latestFileInternalId)
 
   }
 
   "poller" should "properly handle valid files containing corrupted content" in new TestContext {
-    val latestEventTimestamp: Long = Gen.posNum[Long].sample.get
+    val latestFileInternalId: Long = Gen.posNum[Long].sample.get
+    val latestFileGeneratedTimestamp: Long = Gen.posNum[Long].sample.get
     val validFilesNumber: Int = Gen.posNum[Int].sample.get
     val corruptedContentFilesNumber = 2
     val corruptedContentFilesGen: Gen[Path] = Gen.alphaStr.map(new Path(_))
@@ -152,10 +158,10 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
     override val files: Array[Path] = validFiles ++ corruptedContentFiles
 
-    override def constructId(timestamp: Long, repeatsNumber: Int): CallHandler[Try[EventIdentifier]]#Derived = {
+    override def constructId(id: Long, timestamp: Long, repeatsNumber: Int): CallHandler[Try[EventIdentifier]]#Derived = {
       idConstructor.constructId _ expects where {
         (p:Path) => validFiles.contains(p)
-      } repeat validFilesNumber returning Success(EventIdentifier(timestamp, 0L, "", ""))
+      } repeat validFilesNumber returning Success(EventIdentifier(timestamp, id, "", ""))
       idConstructor.constructId _ expects where {
         p: Path => corruptedContentFiles.contains(p)
       } repeat corruptedContentFilesNumber returning Failure(new Exception)
@@ -163,12 +169,13 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
 
     listFiles
-    constructId(latestEventTimestamp, eventsNumber)
+    constructId(latestFileInternalId, latestFileGeneratedTimestamp, eventsNumber)
     readFile(eventsNumber)
     deserialize(validFilesNumber)
 
     val poller = new HDFSEventsPoller(config,
       fSOperationsMaintainer,
+      new AtomicLong(0L),
       new AtomicLong(0L),
       eventDeserializer,
       idConstructor)
@@ -177,11 +184,11 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
     sourceRecords
       .asScala
       .map(sourceRecord => Option(sourceRecord.sourceOffset()
-        .get(Schemas.LAST_READ_FILE_FIELD)
+        .get(Schemas.LAST_READ_FILE_INTERNAL_ID_FIELD)
         .toString
         .toLong)
         .getOrElse(0L))
-      .max should be(latestEventTimestamp)
+      .max should be(latestFileInternalId)
 
   }
 

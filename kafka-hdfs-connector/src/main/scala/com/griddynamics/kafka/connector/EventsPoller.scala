@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import com.griddynamics.generators.{Event, EventDeserializer, FSOperationsMaintainer}
 import com.griddynamics.kafka.connector.HDFSEventsPoller.{constructRecordKey, constructRecordValue, sourcePartition}
-import com.griddynamics.kafka.connector.Schemas.{DEFAULT_FS, EVENTS_DIRECTORY, LAST_READ_FILE_FIELD, VALUE_SCHEMA}
+import com.griddynamics.kafka.connector.Schemas._
 import org.apache.hadoop.fs.Path
 import org.apache.kafka.connect.data.Struct
 import org.apache.kafka.connect.source.SourceRecord
@@ -41,7 +41,8 @@ object HDFSEventsPoller {
 
 case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
                             fsOperationsMaintainer: FSOperationsMaintainer,
-                            nextFileSince: AtomicLong,
+                            nextFileInternalId: AtomicLong,
+                            nextFileGeneratedTimestamp: AtomicLong,
                             deserializer: EventDeserializer,
                             idConstructor: IdConstructor) extends AutoCloseable with EventsPoller {
 
@@ -54,11 +55,13 @@ case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
 
   override def poll(): util.List[SourceRecord] = {
     logger.info(s"Connector starts polling events from HDFS directory = {} to Kafka" +
-      s"with lastReadFileTimestamp = {}", config.getEventsDirectory, nextFileSince.get())
+      s"with lastReadFileTimestamp = {}", config.getEventsDirectory, nextFileInternalId.get())
     val eventsDirectory = new Path(config.getEventsDirectory)
 
     fsOperationsMaintainer
-      .listFiles(eventsDirectory, EventTimestampPathFilter(nextFileSince.get()))
+      .listFiles(eventsDirectory,
+        EventTimestampPathFilter(nextFileInternalId.get(),
+          nextFileGeneratedTimestamp.get()))
       .toList
       .map(tryToConstructSourceRecord)
       .filter {
@@ -88,7 +91,7 @@ case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
     eventTupleTry
       .map(eventTuple =>
         new SourceRecord(sourcePartition(config),
-          sourceOffset(eventTuple._1.timestamp),
+          sourceOffset(eventTuple._1),
           config.getTopic,
           null,
           Schemas.KEY_SCHEMA,
@@ -97,11 +100,15 @@ case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
           constructRecordValue(eventTuple._2)))
   }
 
-  private def sourceOffset(lastFileReadTimestamp: Long): java.util.Map[String, String] = {
-    val latestFileReadTimestamp = scala.math.max(nextFileSince.get(), lastFileReadTimestamp)
-    nextFileSince.set(latestFileReadTimestamp)
+  private def sourceOffset(lastEventIdentifier: EventIdentifier): java.util.Map[String, String] = {
+    val latestReadFileInternalId = scala.math.max(nextFileInternalId.get(), lastEventIdentifier.internalId)
+    nextFileInternalId.set(latestReadFileInternalId)
 
-    Map(LAST_READ_FILE_FIELD -> latestFileReadTimestamp.toString).asJava
+    val latestReadFileGeneratedTimestamp = scala.math.max(nextFileGeneratedTimestamp.get(), lastEventIdentifier.timestamp)
+    nextFileGeneratedTimestamp.set(latestReadFileGeneratedTimestamp)
+
+    Map(LAST_READ_FILE_INTERNAL_ID_FIELD -> latestReadFileInternalId.toString,
+      LAST_READ_FILE_GENERATED_TIMESTAMP -> latestReadFileGeneratedTimestamp.toString).asJava
   }
 
   override def close(): Unit = {

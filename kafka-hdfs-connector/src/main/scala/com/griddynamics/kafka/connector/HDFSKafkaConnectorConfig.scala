@@ -35,7 +35,7 @@ case class HDFSKafkaConnectorConfig(config: ConfigDef,
 
   def getTopic: String = this.getString(TOPIC_CONFIG)
 
-  def getBatchSIze: String = this.getString(BATCH_SIZE_CONFIG)
+  def getBatchSIze: Int = this.getInt(BATCH_SIZE_CONFIG)
 
   def getEventsDirectory: String = this.getString(EVENTS_DIRECTORY_CONFIG)
 
