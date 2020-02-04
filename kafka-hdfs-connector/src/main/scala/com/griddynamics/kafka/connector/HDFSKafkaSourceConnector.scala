@@ -1,7 +1,7 @@
 package com.griddynamics.kafka.connector
 
 import java.util
-import java.util.Collections
+import java.util.concurrent.CopyOnWriteArrayList
 
 import org.apache.kafka.common.config.ConfigDef
 import org.apache.kafka.connect.connector.Task
@@ -10,7 +10,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 class HDFSKafkaSourceConnector extends SourceConnector {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  private var hdfsKafkaConnectorConfig: HDFSKafkaConnectorConfig = _
+  private[connector] var hdfsKafkaConnectorConfig: HDFSKafkaConnectorConfig = _
 
   override def start(props: util.Map[String, String]): Unit = hdfsKafkaConnectorConfig = {
     logger.info("HDFS to Kafka connector is getting started")
@@ -19,8 +19,15 @@ class HDFSKafkaSourceConnector extends SourceConnector {
 
   override def taskClass(): Class[_ <: Task] = classOf[HDFSKafkaSourceTask]
 
-  override def taskConfigs(maxTasks: Int): util.List[util.Map[String, String]] =
-    Collections.singletonList(hdfsKafkaConnectorConfig.originalsStrings()) //todo:rework this behaviour
+  override def taskConfigs(maxTasks: Int): util.List[util.Map[String, String]] = {
+    val configList = new CopyOnWriteArrayList[util.Map[String, String]]()
+    for (i <- 1 to maxTasks) {
+      val originalStrings = hdfsKafkaConnectorConfig.originalsStrings()
+      originalStrings.put("task.id", i.toString)
+      configList.add(originalStrings)
+    }
+    configList
+  }
 
   override def stop(): Unit = {
     logger.info("HDFS Kafka Connector is getting stopped")

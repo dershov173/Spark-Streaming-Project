@@ -57,8 +57,8 @@ case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
     logger.info(s"Connector starts polling events from HDFS directory = {} to Kafka" +
       s"with lastReadFileTimestamp = {} and lastReadFileInternalId = {}",
       config.getEventsDirectory,
-      nextFileGeneratedTimestamp.get(),
-      nextFileInternalId.get()
+      nextFileGeneratedTimestamp.get().toString,
+      nextFileInternalId.get().toString
     )
     val eventsDirectory = new Path(config.getEventsDirectory)
 
