@@ -1,11 +1,11 @@
 package com.griddynamics.kafka.connector
 
 import java.util
-import java.util.concurrent.atomic.AtomicLong
 
 import com.griddynamics.generators.{Event, EventDeserializer, EventsGenerator, FSOperationsMaintainer}
 import org.apache.hadoop.fs.{Path, PathFilter}
 import org.apache.kafka.connect.source.SourceRecord
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalamock.handlers.{CallHandler, CallHandler2}
 import org.scalamock.scalatest.MockFactory
@@ -13,7 +13,6 @@ import org.scalatest.{Assertion, FlatSpec, Matchers}
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
-import org.scalacheck.Arbitrary.arbitrary
 
 class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
@@ -39,8 +38,7 @@ class HDFSEventsPollerTest extends FlatSpec with Matchers with MockFactory {
 
     val poller: HDFSEventsPoller = HDFSEventsPoller(config,
       fSOperationsMaintainer,
-      new AtomicLong(0L),
-      new AtomicLong(0L),
+      FilterParams(0L, 0L, 1, 1),
       eventDeserializer,
       idConstructor)
 

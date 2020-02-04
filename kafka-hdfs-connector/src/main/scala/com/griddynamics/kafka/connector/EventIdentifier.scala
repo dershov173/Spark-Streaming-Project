@@ -1,10 +1,9 @@
 package com.griddynamics.kafka.connector
 
-import org.apache.hadoop.fs.{Path, PathFilter}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.hadoop.fs.Path
 
 import scala.util.matching.Regex
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 trait IdConstructor {
   def constructId(p: Path): Try[EventIdentifier]
@@ -44,27 +43,5 @@ case class EventIdFromFSPathConstructor(splitBy: Regex) extends IdConstructor {
         strings(instanceNameIdx)
       else null
     EventIdentifier(timestamp, internalId, instanceNameOpt, p.getName)
-  }
-}
-
-case class EventTimestampPathFilter(lastUploadedFileInternalId: Long,
-                                    generatedTimestamp: Long) extends PathFilter {
-  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
-
-  override def accept(path: Path): Boolean = {
-    logger.debug("PathFilter with following lastUploadedFileTimestamp= {} and internalId = {} has been applied",
-      generatedTimestamp,
-      lastUploadedFileInternalId)
-    EventIdFromFSPathConstructor()
-      .constructId(path) match {
-      case Success(eventIdentifier) =>
-        eventIdentifier.timestamp > generatedTimestamp ||
-          (eventIdentifier.timestamp == generatedTimestamp &&
-            eventIdentifier.internalId > lastUploadedFileInternalId)
-
-      case Failure(exception) =>
-        logger.error(s"There was an exception occurred while trying to process file ${path}", exception)
-        false
-    }
   }
 }

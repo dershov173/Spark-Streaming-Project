@@ -41,12 +41,13 @@ object HDFSEventsPoller {
 
 case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
                             fsOperationsMaintainer: FSOperationsMaintainer,
-                            nextFileInternalId: AtomicLong,
-                            nextFileGeneratedTimestamp: AtomicLong,
+                            initialFilterParams: FilterParams,
                             deserializer: EventDeserializer,
                             idConstructor: IdConstructor) extends AutoCloseable with EventsPoller {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  private val nextFileInternalId: AtomicLong = new AtomicLong(initialFilterParams.lastUploadedFileInternalId)
+  private val nextFileGeneratedTimestamp: AtomicLong = new AtomicLong(initialFilterParams.generatedTimestamp)
 
   implicit class RicherTry[+T](wrapped: Try[T]) {
     def zip[That](that: => Try[That]): Try[(T, That)] =
@@ -62,10 +63,14 @@ case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
     )
     val eventsDirectory = new Path(config.getEventsDirectory)
 
+    val updatedFilterParams = FilterParams(lastUploadedFileInternalId = nextFileInternalId.get(),
+      generatedTimestamp = nextFileGeneratedTimestamp.get(),
+      tasksNumber = initialFilterParams.tasksNumber,
+      taskId = initialFilterParams.taskId)
+
     fsOperationsMaintainer
       .listFiles(eventsDirectory,
-        EventTimestampPathFilter(nextFileInternalId.get(),
-          nextFileGeneratedTimestamp.get()))
+        PathFilters.getPathFilter(updatedFilterParams))
       .toList
       .map(tryToConstructSourceRecord)
       .filter {
@@ -97,7 +102,7 @@ case class HDFSEventsPoller(config: HDFSKafkaConnectorConfig,
         new SourceRecord(sourcePartition(config),
           sourceOffset(eventTuple._1),
           config.getTopic,
-          null,
+          initialFilterParams.taskId - 1,
           Schemas.KEY_SCHEMA,
           constructRecordKey(eventTuple._1.originalFileName),
           Schemas.VALUE_SCHEMA,

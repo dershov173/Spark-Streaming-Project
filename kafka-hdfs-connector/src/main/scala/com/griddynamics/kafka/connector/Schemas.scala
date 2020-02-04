@@ -17,6 +17,8 @@ object Schemas {
   val DEFAULT_FS = "defaultFS"
   val EVENTS_DIRECTORY = "eventsDirectory"
 
+  val CURRENT_TASK_ID = "task.id"
+
   val KEY_SCHEMA: Schema = SchemaBuilder
     .struct()
     .name(SCHEMA_KEY_NAME)

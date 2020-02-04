@@ -2,7 +2,6 @@ package com.griddynamics.kafka.connector
 
 import java.util
 import java.util.Properties
-import java.util.concurrent.atomic.AtomicLong
 
 import com.griddynamics.generators._
 import org.apache.kafka.connect.source.{SourceRecord, SourceTask}
@@ -19,17 +18,11 @@ class HDFSKafkaSourceTask extends SourceTask {
     val config = HDFSKafkaConnectorConfig(props)
 
     val fSOperationsMaintainer = initMaintainer(props)
-    val lastProcessedFileInternalId = getConfigValueFor(config, Schemas.LAST_READ_FILE_INTERNAL_ID_FIELD)
-    val lastProcessedFileGeneratedTimestamp = getConfigValueFor(config, Schemas.LAST_READ_FILE_GENERATED_TIMESTAMP)
-
-    logger.info("The events directory will be traversed starting with timestamp = {} and internalId = {}",
-      lastProcessedFileGeneratedTimestamp,
-      lastProcessedFileInternalId)
+    val initialFilterParams = initFilterParams(config)
 
     hdfsEventsPoller = HDFSEventsPoller(config,
       fSOperationsMaintainer,
-      new AtomicLong(lastProcessedFileInternalId),
-      new AtomicLong(lastProcessedFileGeneratedTimestamp),
+      initialFilterParams,
       EventFromJsonDeserializer,
       EventIdFromFSPathConstructor())
   }
@@ -39,6 +32,26 @@ class HDFSKafkaSourceTask extends SourceTask {
     val properties = new Properties()
     properties.putAll(props)
     FSOperationsMaintainer(PropertiesWrapper(properties))
+  }
+
+  private def initFilterParams(connectorConfig: HDFSKafkaConnectorConfig) : FilterParams = {
+    val lastProcessedFileInternalId = getConfigValueFor(connectorConfig, Schemas.LAST_READ_FILE_INTERNAL_ID_FIELD)
+    val lastProcessedFileGeneratedTimestamp = getConfigValueFor(connectorConfig, Schemas.LAST_READ_FILE_GENERATED_TIMESTAMP)
+    val tasksNumber = connectorConfig.getMaxTasksNumber
+    val currentTaskId = connectorConfig.getCurrentTaskId
+
+    logger.info("The events directory will be traversed starting with timestamp = {} and internalId = {}." +
+      "Tasks number = {}, current Task id = {}",
+      lastProcessedFileGeneratedTimestamp.toString,
+      lastProcessedFileInternalId.toString,
+      tasksNumber.toString,
+      currentTaskId.toString
+    )
+
+    FilterParams(lastProcessedFileInternalId,
+      lastProcessedFileGeneratedTimestamp,
+      tasksNumber,
+      currentTaskId)
   }
 
   private def getConfigValueFor(config: HDFSKafkaConnectorConfig, key:String) : Long = {
