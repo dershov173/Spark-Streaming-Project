@@ -21,7 +21,7 @@ class HDFSKafkaSourceConnector extends SourceConnector {
 
   override def taskConfigs(maxTasks: Int): util.List[util.Map[String, String]] = {
     val configList = new CopyOnWriteArrayList[util.Map[String, String]]()
-    for (i <- 1 to maxTasks) {
+    for (i <- 0 until maxTasks) {
       val originalStrings = hdfsKafkaConnectorConfig.originalsStrings()
       originalStrings.put(Schemas.CURRENT_TASK_ID, i.toString)
       configList.add(originalStrings)
