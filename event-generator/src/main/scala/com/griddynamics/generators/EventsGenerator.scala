@@ -19,6 +19,17 @@ object EventsGenerator {
 
     EventsGenerator(maxDelayInMillis, redirectsFraction, clicksFraction)
   }
+
+  def generateIpAddress(): Gen[IpAddress] = {
+    val domainGen: Gen[Int] = Gen.chooseNum(0, 255)
+
+    for {
+      firstDomain <- domainGen
+      secondDomain <- domainGen
+      thirdDomain <- domainGen
+      fourthDomain <- domainGen
+    } yield IpAddress(firstDomain, secondDomain, thirdDomain, fourthDomain)
+  }
 }
 
 case class EventsGenerator(maxDelayInMillis: Long = 100000L,
@@ -28,25 +39,14 @@ case class EventsGenerator(maxDelayInMillis: Long = 100000L,
   def generatePortionOfEvents(numberToGenerate: Int): Gen[List[Event]] =
     Gen.listOfN(numberToGenerate, generateEvent())
 
+  import com.griddynamics.generators.EventsGenerator._
   def generateEvent(): Gen[Event] = {
     for {
       eventType <- generateType()
       ipAddress <- generateIpAddress()
       eventTime <- generateEventTime()
       url <- generateUrl()
-    } yield Event(eventType, ipAddress, eventTime, url)
-  }
-
-
-  def generateIpAddress(): Gen[String] = {
-    val domainGen: Gen[Int] = Gen.chooseNum(0, 255)
-
-    for {
-      firstDomain <- domainGen
-      secondDomain <- domainGen
-      thirdDomain <- domainGen
-      fourthDomain <- domainGen
-    } yield IpAddress(firstDomain, secondDomain, thirdDomain, fourthDomain).literalName
+    } yield Event(eventType, ipAddress.literalName, eventTime, url)
   }
 
   def generateUrl(): Gen[String] = Gen
