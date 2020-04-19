@@ -1,49 +1,78 @@
 package com.griddynamics.fraud_detection
 
-import org.apache.spark.sql.SparkSession
+import com.griddynamics.generators.{Event, EventFromJsonDeserializer}
+import org.apache.spark.sql.{Row, SparkSession}
 
 object FraudDetector extends org.apache.spark.deploy.SparkHadoopUtil {
-  //  val kafkaParams = Map[String, Object](
-  //    "bootstrap.servers" -> "localhost:9092",
-  //    "key.deserializer" -> classOf[EventIdDeserializer],
-  //    "value.deserializer" -> classOf[EventFromJsonDeserializer],
-  //    "group.id" -> "g1",
-  //    "auto.offset.reset" -> "earliest",
-  //    "enable.auto.commit" -> (false: java.lang.Boolean)
-  //  )
-  //
 
   def main(args: Array[String]): Unit = {
 
+    import org.apache.log4j.Logger
+    import org.apache.log4j.Level
 
-    val sparkSession: SparkSession = SparkSession
+    Logger.getLogger("org").setLevel(Level.OFF)
+    Logger.getLogger("akka").setLevel(Level.OFF)
+
+    implicit val sparkSession: SparkSession = SparkSession
       .builder
       .appName("fraud_detector")
       .master("local[4]")
+      .config("spark.streaming.stopGracefullyOnShutdown", value = true)
       //      .config("jaasddasrs", "/Users/dershov/.m2/repository/org/apache/spark/spark-streaming-kafka-0-10_2.12/2.4.0/spark-streaming-kafka-0-10_2.12-2.4.0.jar")
       //      .config("spark.jars.packages", "org.apache.spark:spark-streaming-kafka-0-10_2.12:2.4.0")
       //          .config("packages", "org.apache.spark:spark-streaming-kafka-0-10_2.12")
       .getOrCreate()
 
-    //    sparkSession.conf.set("spark.jars.packages", "org.apache.spark:spark-streaming-kafka-0-10_2.12:2.4.0")
-    println(sparkSession.conf.getAll.toString)
-
     import sparkSession.implicits._
-    sparkSession
-      .readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", "127.0.0.1:9092")
-      .option("subscribe", "events")
+    val events = sparkSession.readStream
+      .format("socket")
+      .option("host", "localhost")
+      .option("port", "9999")
+      .option("spark.streaming.stopGracefullyOnShutdown", value = true)
       .load()
-      .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-      .as[(String, String)]
+      .map { row =>
+        EventFromJsonDeserializer.deserialize(row.getString(0)).get
+      }
+
+
+    val query = BotsIdentifier(windowDuration = "20 seconds").identifyBots(events)
       .writeStream
-      //      .outputMode("complete")
+      .outputMode("complete")
+//              .format("memory")
+//              .queryName("tableName")
       .format("console")
       .start()
-      .awaitTermination()
+
+    def runStream() : Unit = {
+        query.awaitTermination()
+    }
+
+    runStream()
+//    val thread = new Thread(() => runStream())
+//    thread.start()
+//    Thread.sleep(20000)
+//    query.stop()
+//    thread.join()
 
 
+
+
+//    thread.interrupt()
+
+//    sparkSession.table("tableName").show()
+//    sparkSession
+//      .readStream
+//      .format("kafka")
+//      .option("kafka.bootstrap.servers", "127.0.0.1:9092")
+//      .option("subscribe", "events")
+//      .load()
+//      .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+//      .as[(String, String)]
+//      .writeStream
+//      //      .outputMode("complete")
+//      .format("console")
+//      .start()
+//      .awaitTermination()
   }
 
 
@@ -62,3 +91,5 @@ object FraudDetector extends org.apache.spark.deploy.SparkHadoopUtil {
   //  streamingContext.awaitTermination()
 
 }
+
+

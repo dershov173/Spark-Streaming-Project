@@ -2,11 +2,16 @@ package com.griddynamics.generators
 
 import org.scalacheck.Gen
 
-case class IpAddress(firstDomain: Int, secondDomain: Int, thirdDomain: Int, fourthDomain: Int) {
+@SerialVersionUID(100L)
+case class IpAddress(firstDomain: Int, secondDomain: Int, thirdDomain: Int, fourthDomain: Int) extends Serializable {
   def literalName: String = s"$firstDomain.$secondDomain.$thirdDomain.$fourthDomain"
 }
 
-case class Event(eventType: String, ipAddress: String, eventTime: String, url: String)
+@SerialVersionUID(1000L)
+case class Event(eventType: String,
+                 ipAddress: String,
+                 eventTime: String,
+                 url: String) extends Serializable
 
 object EventsGenerator {
   private val maxDelayConfig = "generator.max_delay_in_millis"
